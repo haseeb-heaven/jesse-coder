@@ -140,9 +140,11 @@ class CodeExecutor:
         timeout: Optional[float] = None,
         on_output: Optional[Callable[[str], None]] = None,
         language: str = "shell",
+        stdin_data: Optional[str] = None,
     ) -> ExecutionResult:
         """
         Spawns a process with live streaming, timeout control, and output truncation.
+        Supports standard input via stdin_data.
         """
         working_dir = cwd or self.default_cwd
         effective_timeout = timeout if timeout is not None else self.timeout
@@ -175,6 +177,7 @@ class CodeExecutor:
                 command,
                 cwd=working_dir,
                 env=merged_env,
+                stdin=subprocess.PIPE if stdin_data is not None else None,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -199,9 +202,8 @@ class CodeExecutor:
         # Monitor execution with timeout
         deadline = time.time() + effective_timeout
         try:
-            # Read streams concurrently using select / poll or communicate with timeout
             try:
-                stdout_str, stderr_str = proc.communicate(timeout=effective_timeout)
+                stdout_str, stderr_str = proc.communicate(input=stdin_data, timeout=effective_timeout)
                 exit_code = proc.returncode
             except subprocess.TimeoutExpired:
                 timed_out = True
@@ -257,6 +259,7 @@ class CodeExecutor:
         cwd: Optional[str] = None,
         timeout: Optional[float] = None,
         on_output: Optional[Callable[[str], None]] = None,
+        stdin_data: Optional[str] = None,
     ) -> ExecutionResult:
         """
         Execute Python code using the active python binary.
@@ -280,6 +283,7 @@ class CodeExecutor:
                 timeout=timeout,
                 on_output=on_output,
                 language="python",
+                stdin_data=stdin_data,
             )
         finally:
             if temp_file and os.path.exists(temp_file):
@@ -288,12 +292,113 @@ class CodeExecutor:
                 except Exception:
                     pass
 
+    def execute_javascript(
+        self,
+        code: str,
+        cwd: Optional[str] = None,
+        timeout: Optional[float] = None,
+        on_output: Optional[Callable[[str], None]] = None,
+        stdin_data: Optional[str] = None,
+    ) -> ExecutionResult:
+        """
+        Execute JavaScript code using Node.js.
+        Writes code to a temporary file to support multiline scripts, require/import, and stdin.
+        """
+        temp_file = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".js",
+                delete=False,
+                encoding="utf-8",
+            ) as f:
+                f.write(code)
+                temp_file = f.name
+
+            cmd = ["node", temp_file]
+            return self.run_process(
+                command=cmd,
+                cwd=cwd,
+                timeout=timeout,
+                on_output=on_output,
+                language="javascript",
+                stdin_data=stdin_data,
+            )
+        finally:
+            if temp_file and os.path.exists(temp_file):
+                try:
+                    os.unlink(temp_file)
+                except Exception:
+                    pass
+
+    def execute_cpp(
+        self,
+        code: str,
+        cwd: Optional[str] = None,
+        timeout: Optional[float] = None,
+        on_output: Optional[Callable[[str], None]] = None,
+        stdin_data: Optional[str] = None,
+    ) -> ExecutionResult:
+        """
+        Compile and execute C++ code using clang++ or g++.
+        """
+        temp_src = None
+        temp_bin = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".cpp",
+                delete=False,
+                encoding="utf-8",
+            ) as f:
+                f.write(code)
+                temp_src = f.name
+
+            temp_bin = temp_src + ".bin"
+            compiler = "clang++" if os.system("which clang++ >/dev/null 2>&1") == 0 else "g++"
+            compile_cmd = [compiler, "-std=c++17", "-O2", temp_src, "-o", temp_bin]
+
+            # Compile step
+            compile_res = self.run_process(
+                command=compile_cmd,
+                cwd=cwd,
+                timeout=20.0,
+                language="cpp",
+            )
+            if not compile_res.is_success:
+                return ExecutionResult(
+                    stdout=compile_res.stdout,
+                    stderr=f"Compilation error:\n{compile_res.stderr}",
+                    output=f"Compilation error:\n{compile_res.output}",
+                    exit_code=compile_res.exit_code or 1,
+                    error=f"Compilation failed: {compile_res.stderr or compile_res.error}",
+                    language="cpp",
+                )
+
+            # Execute compiled binary
+            return self.run_process(
+                command=[temp_bin],
+                cwd=cwd,
+                timeout=timeout,
+                on_output=on_output,
+                language="cpp",
+                stdin_data=stdin_data,
+            )
+        finally:
+            for p in (temp_src, temp_bin):
+                if p and os.path.exists(p):
+                    try:
+                        os.unlink(p)
+                    except Exception:
+                        pass
+
     def execute_shell(
         self,
         command: str,
         cwd: Optional[str] = None,
         timeout: Optional[float] = None,
         on_output: Optional[Callable[[str], None]] = None,
+        stdin_data: Optional[str] = None,
     ) -> ExecutionResult:
         """
         Execute a shell script/command using /bin/bash or /bin/sh.
@@ -306,6 +411,7 @@ class CodeExecutor:
             timeout=timeout,
             on_output=on_output,
             language="shell",
+            stdin_data=stdin_data,
         )
 
     def execute_code(
@@ -315,25 +421,20 @@ class CodeExecutor:
         cwd: Optional[str] = None,
         timeout: Optional[float] = None,
         on_output: Optional[Callable[[str], None]] = None,
+        stdin_data: Optional[str] = None,
     ) -> ExecutionResult:
         """
         Route code to the appropriate language execution handler.
         """
         lang = language.lower().strip()
         if lang in ("python", "py", "python3"):
-            return self.execute_python(code, cwd=cwd, timeout=timeout, on_output=on_output)
-        elif lang in ("bash", "sh", "shell", "zsh"):
-            return self.execute_shell(code, cwd=cwd, timeout=timeout, on_output=on_output)
+            return self.execute_python(code, cwd=cwd, timeout=timeout, on_output=on_output, stdin_data=stdin_data)
+        elif lang in ("cpp", "c++", "cxx", "cc"):
+            return self.execute_cpp(code, cwd=cwd, timeout=timeout, on_output=on_output, stdin_data=stdin_data)
         elif lang in ("javascript", "js", "node"):
-            # Check for node
-            cmd = ["node", "-e", code]
-            return self.run_process(
-                command=cmd,
-                cwd=cwd,
-                timeout=timeout,
-                on_output=on_output,
-                language="javascript",
-            )
+            return self.execute_javascript(code, cwd=cwd, timeout=timeout, on_output=on_output, stdin_data=stdin_data)
+        elif lang in ("bash", "sh", "shell", "zsh"):
+            return self.execute_shell(code, cwd=cwd, timeout=timeout, on_output=on_output, stdin_data=stdin_data)
         else:
             # Fallback to shell execution
-            return self.execute_shell(code, cwd=cwd, timeout=timeout, on_output=on_output)
+            return self.execute_shell(code, cwd=cwd, timeout=timeout, on_output=on_output, stdin_data=stdin_data)
