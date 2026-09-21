@@ -48,8 +48,11 @@ class JesseCodingBot:
         client: Optional[JesseClient] = None,
         conversation: Optional[ConversationManager] = None,
         executor: Optional[CodeExecutor] = None,
+        model: Optional[str] = None,
     ) -> None:
         self.config = config or JesseConfig()
+        if model:
+            self.config.model = model
         self.config.validate()
 
         self.client = client or JesseClient(config=self.config)

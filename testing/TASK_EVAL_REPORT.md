@@ -5,22 +5,22 @@
 - **Passed**: 1
 - **Failed**: 9
 - **Pass Rate**: 10.0%
-- **Timestamp**: 2026-09-22 05:23:06
+- **Timestamp**: 2026-09-22 05:29:29
 
 ## Summary Table
 
 | Task ID | Title | Language | Status | Execution Time | Notes |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| `task_01` | Circular Queue | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpjmy4ydym.cpp:1:1: error: unknown type name 'def' |
-| `task_02` | LRU Cache | `python` | ✅ PASS | 57.1ms | Matches expected output |
-| `task_03` | Sliding Window Rate Limiter | `javascript` | ❌ FAIL | 162.8ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpixc97lrb.js:1 |
-| `task_04` | Shortest Path | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp9lwlyamp.cpp:1:1: error: unknown type name 'import' |
-| `task_05` | Inventory Transaction | `python` | ❌ FAIL | 54.3ms | Output mismatch. |
-| `task_06` | Payment Aggregation | `javascript` | ❌ FAIL | 60.5ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpiq7c8_9q.js:1 |
-| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | 41.5ms | Output mismatch. |
-| `task_08` | Binary Search Tree | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp53sc13_e.cpp:2:5: error: expected class name |
-| `task_09` | Dependency Build Order | `javascript` | ❌ FAIL | 59.0ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpcwn48hi7.js:1 |
-| `task_10` | Video Watch Time | `python` | ❌ FAIL | 49.5ms | Output mismatch. |
+| `task_01` | Circular Queue | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:1: error: unknown type name 'def' |
+| `task_02` | LRU Cache | `python` | ✅ PASS | 54.3ms | Matches expected output |
+| `task_03` | Sliding Window Rate Limiter | `javascript` | ❌ FAIL | 352.5ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpnjejsjql.js:1 |
+| `task_04` | Shortest Path | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:1:1: error: unknown type name 'import' |
+| `task_05` | Inventory Transaction | `python` | ❌ FAIL | 56.7ms | Output mismatch. |
+| `task_06` | Payment Aggregation | `javascript` | ❌ FAIL | 45.1ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmptu_4sd36.js:1 |
+| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | 37.6ms | Output mismatch. |
+| `task_08` | Binary Search Tree | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpw1iw7mqy.cpp:2:5: error: expected class name |
+| `task_09` | Dependency Build Order | `javascript` | ❌ FAIL | 51.0ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp4nmee1qm.js:1 |
+| `task_10` | Video Watch Time | `python` | ❌ FAIL | 36.1ms | Output mismatch. |
 
 ## Detailed Task Results
 
@@ -57,20 +57,20 @@ OK
 
 #### Diagnostics:
 ```
-Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpjmy4ydym.cpp:1:1: error: unknown type name 'def'
+Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:1: error: unknown type name 'def'
     1 | def solve(*args, **kwargs):
       | ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpjmy4ydym.cpp:1:12: error: use of undeclared identifier 'args'
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:12: error: use of undeclared identifier 'args'
     1 | def solve(*args, **kwargs):
       |            ^~~~
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpjmy4ydym.cpp:1:20: error: use of undeclared identifier 'kwargs'
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:20: error: use of undeclared identifier 'kwargs'
     1 | def solve(*args, **kwargs):
       |                    ^~~~~~
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpjmy4ydym.cpp:1:27: error: expected ';' after top level declarator
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:27: error: expected ';' after top level declarator
     1 | def solve(*args, **kwargs):
       |                           ^
       |                           ;
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpjmy4ydym.cpp:2:5: error: expected unqualified-id
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:2:5: error: expected unqualified-id
     2 |     """Deterministic algorithmic implementation by Jesse."""
       |     ^
 5 errors generated.
@@ -220,7 +220,7 @@ ALLOW
 
 #### Diagnostics:
 ```
-/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpixc97lrb.js:1
+/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpnjejsjql.js:1
 def solve(*args, **kwargs):
     ^^^^^
 
@@ -299,23 +299,23 @@ if __name__ == '__main__':
 
 #### Diagnostics:
 ```
-Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp9lwlyamp.cpp:1:1: error: unknown type name 'import'
+Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:1:1: error: unknown type name 'import'
     1 | import heapq
       | ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp9lwlyamp.cpp:1:13: error: expected ';' after top level declarator
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:1:13: error: expected ';' after top level declarator
     1 | import heapq
       |             ^
       |             ;
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp9lwlyamp.cpp:7:5: error: expected unqualified-id
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:7:5: error: expected unqualified-id
     7 |     for u, v, w in edges:
       |     ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp9lwlyamp.cpp:12:10: error: use of undeclared identifier 'start_node'
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:12:10: error: use of undeclared identifier 'start_node'
    12 |     dist[start_node] = 0
       |          ^~~~~~~~~~
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp9lwlyamp.cpp:12:5: error: a type specifier is required for all declarations
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:12:5: error: a type specifier is required for all declarations
    12 |     dist[start_node] = 0
       |     ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp9lwlyamp.cpp:12:25: error: expected ';' after top level declarator
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:12:25: error: expected ';' after top level declarator
    12 |     dist[start_node] = 0
       |                         ^
       |                         ;
@@ -392,7 +392,7 @@ bob 70
 
 #### Diagnostics:
 ```
-/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpiq7c8_9q.js:1
+/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmptu_4sd36.js:1
 def solve(*args, **kwargs):
     ^^^^^
 
@@ -527,13 +527,13 @@ NOT FOUND
 
 #### Diagnostics:
 ```
-Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp53sc13_e.cpp:2:5: error: expected class name
+Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpw1iw7mqy.cpp:2:5: error: expected class name
     2 |     def __init__(self, val: int):
       |     ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp53sc13_e.cpp:54:35: error: expected '{' after base class list
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpw1iw7mqy.cpp:54:35: error: expected '{' after base class list
    54 |     assert bst.search(99) is False
       |                                   ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp53sc13_e.cpp:54:35: error: expected ';' after class
+/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpw1iw7mqy.cpp:54:35: error: expected ';' after class
    54 |     assert bst.search(99) is False
       |                                   ^
       |                                   ;
@@ -568,7 +568,7 @@ A B C D E
 
 #### Diagnostics:
 ```
-/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpcwn48hi7.js:1
+/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp4nmee1qm.js:1
 def solve(*args, **kwargs):
     ^^^^^
 
@@ -622,4 +622,3 @@ Jesse coding solver ready.
 ```
 
 ---
-
