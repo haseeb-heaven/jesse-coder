@@ -1,0 +1,81 @@
+/* Custom styling matching the jev-system-one deep slate and cyber-cyan design language */
+
+:root {
+  --bg-primary: #080b12;
+  --bg-secondary: #0d131f;
+  --bg-tertiary: #111827;
+  --border-subtle: #1e293b;
+  --border-active: #0284c7;
+  --cyan-accent: #22d3ee;
+  --cyan-glow: rgba(34, 211, 238, 0.25);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080b12;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}
+
+/* Console CRT styling */
+.console-screen {
+  background: radial-gradient(circle at 50% 0%, #0c1424 0%, #060911 100%);
+  font-family: "JetBrains Mono", "SF Mono", "Fira Code", Menlo, monospace;
+}
+
+/* Glassmorphism elements */
+.glass-panel {
+  background: rgba(13, 19, 31, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(38, 52, 77, 0.7);
+}
+
+.glass-panel:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+/* Glow effects */
+.cyan-glow-border {
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Code block highlight inside markdown */
+.markdown-body pre {
+  margin: 0;
+}
+
+.markdown-body code {
+  font-family: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+}
