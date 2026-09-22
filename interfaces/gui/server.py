@@ -42,6 +42,14 @@ except ImportError:
     from jesse_coder.executor import CodeExecutor, ExecutionResult
     from jesse_coder.code_extractor import ExtractedCodeBlock, get_primary_code_block
 
+try:
+    from dotenv import load_dotenv
+    _ENV_PATH = _ROOT_DIR / ".env"
+    if _ENV_PATH.exists():
+        load_dotenv(_ENV_PATH, override=True)
+except ImportError:
+    pass
+
 logger = logging.getLogger("jesse_coder.web_server")
 logging.basicConfig(level=logging.INFO)
 
@@ -123,16 +131,41 @@ def save_settings_to_env(
 
 
 def get_bot(api_key_override: Optional[str] = None) -> JesseCodingBot:
-    """Lazy initialize and retrieve singleton bot instance with optional key override."""
+    """Lazy initialize and retrieve bot instance."""
     global bot
+    env_path = _ROOT_DIR / ".env"
+    if env_path.exists():
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_path, override=False)
+        except ImportError:
+            pass
+
     if bot is None:
         cfg = JesseConfig()
         if not cfg.api_key:
             cfg.api_key = "unconfigured"
         bot = JesseCodingBot(config=cfg)
-    if api_key_override and api_key_override.strip() and bot.config.api_key != api_key_override:
-        bot.config.api_key = api_key_override
+
+    # If an explicit override header is passed that is not unconfigured
+    if api_key_override and api_key_override.strip() and api_key_override.strip() != "unconfigured":
+        if bot.config.api_key != api_key_override.strip():
+            bot.config.api_key = api_key_override.strip()
+            bot.client = JesseClient(config=bot.config)
+    else:
+        # Check if environment / .env has a real key and restore if needed
+        env_key = os.getenv("JESSE_API_KEY", "").strip()
+        if env_key and env_key != "unconfigured" and (not api_key_override):
+            if bot.config.api_key != env_key:
+                bot.config.api_key = env_key
+                bot.client = JesseClient(config=bot.config)
+
+    # Ensure base_url defaults to https://jesse.my/api/v1
+    env_base = os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1").strip()
+    if not bot.config.base_url or "solidsf.com" in bot.config.base_url:
+        bot.config.base_url = env_base if env_base else "https://jesse.my/api/v1"
         bot.client = JesseClient(config=bot.config)
+
     return bot
 
 
@@ -263,16 +296,42 @@ async def update_settings(req: SettingsRequest, request: Request) -> Dict[str, A
 @app.post("/api/settings/verify")
 async def verify_settings(req: VerifyRequest, request: Request) -> Dict[str, Any]:
     """Verify API credentials against Jesse API by checking auth and querying model list."""
-    key_to_test = req.api_key.strip() if req.api_key else None
+    # 1. Check explicit key in body
+    key_to_test = req.api_key.strip() if req.api_key and req.api_key.strip() else None
+
+    # 2. Check .env directly so local verification always works out of the box
+    if not key_to_test:
+        env_path = _ROOT_DIR / ".env"
+        if env_path.exists():
+            try:
+                from dotenv import load_dotenv
+                load_dotenv(env_path, override=True)
+            except ImportError:
+                pass
+        env_key = os.getenv("JESSE_API_KEY", "").strip()
+        if env_key and env_key != "unconfigured":
+            key_to_test = env_key
+
+    # 3. Check header key (for Vercel / serverless deployments)
     if not key_to_test:
         header_key = extract_request_api_key(request)
-        active_bot = get_bot(api_key_override=header_key)
+        if header_key and header_key != "unconfigured":
+            key_to_test = header_key
+
+    # 4. Fallback to active bot config
+    if not key_to_test:
+        active_bot = get_bot()
         key_to_test = active_bot.config.api_key
 
     if not key_to_test or key_to_test == "unconfigured":
-        return {"valid": False, "error": "No API key provided or configured."}
+        return {"valid": False, "error": "No API key provided or found in .env."}
 
-    base_url = req.base_url.strip() if req.base_url else get_bot().config.base_url
+    # Resolve base_url: prefer req.base_url, then .env, then https://jesse.my/api/v1
+    raw_base = req.base_url.strip() if req.base_url and req.base_url.strip() else os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1").strip()
+    base_url = raw_base.rstrip("/")
+    if "solidsf.com" in base_url or not base_url:
+        base_url = "https://jesse.my/api/v1"
+
     try:
         test_cfg = JesseConfig(api_key=key_to_test, base_url=base_url)
         test_client = JesseClient(config=test_cfg)
@@ -280,9 +339,9 @@ async def verify_settings(req: VerifyRequest, request: Request) -> Dict[str, Any
         test_client.get_memory()
         # 2. Retrieve accessible models
         models = test_client.get_models()
-        return {"valid": True, "models": models}
+        return {"valid": True, "models": models, "base_url": base_url}
     except Exception as exc:
-        return {"valid": False, "error": str(exc)}
+        return {"valid": False, "error": str(exc), "base_url": base_url}
 
 
 @app.post("/api/model")

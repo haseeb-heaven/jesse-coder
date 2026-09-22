@@ -20,7 +20,7 @@ Check Jesse built-in CAD software for [@solidSF](https://solidsf.com/).
 - **SolidSF Official CAD Platform**: [https://solidsf.com/](https://solidsf.com/) — Next-generation CAD engineering software powered by Jesse.
 - **Jesse Inference API & Engine**: [https://jesse.solidsf.com/api](https://jesse.solidsf.com/api) — Commercial autonomous inference API & continuous learning engine (Open Paid Beta, unlimited daily requests, strict 1 req / 2s rate limit, OpenAI compatibility, and dual-model continuous learning).
 - **Interactive Playground**: [https://jesse.my/#playground](https://jesse.my/#playground) — Try Jesse out live in your browser with an **Unlimited API per day**!
-- **API Base Endpoint**: `https://jesse.solidsf.com/api/v1`
+- **API Base Endpoint**: `https://jesse.my/api/v1`
 
 ---
 
@@ -172,7 +172,7 @@ Edit `.env`:
 ```env
 # Jesse API Credentials
 JESSE_API_KEY=your_api_key_here
-JESSE_BASE_URL=https://jesse.solidsf.com/api/v1
+JESSE_BASE_URL=https://jesse.my/api/v1
 JESSE_MODEL=jesse-prod
 JESSE_TEMPERATURE=0.2
 JESSE_TIMEOUT=60.0

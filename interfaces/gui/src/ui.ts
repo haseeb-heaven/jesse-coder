@@ -601,7 +601,7 @@ export class UIController {
       this.rawCharCountEl.textContent  = `${charCount.toLocaleString()} chars`;
       this.rawHasCodeEl.textContent    = hasCode ? '⟨/⟩ Contains code blocks' : '— No code blocks';
       this.rawHasCodeEl.className      = hasCode ? 'text-cyan-600' : 'text-slate-600';
-      this.rawModelInfoEl.textContent  = 'jesse.solidsf.com/api/v1';
+      this.rawModelInfoEl.textContent  = 'jesse.my/api/v1';
       this.rawStatsBarEl.classList.remove('hidden');
     } else {
       this.rawStatsBarEl.classList.add('hidden');
@@ -877,7 +877,7 @@ export class UIController {
 
   public populateSettings(settings: ServerSettings, currentRetries?: number): void {
     if (this.settingsBaseUrlEl) {
-      this.settingsBaseUrlEl.value = settings.base_url || 'https://jesse.solidsf.com/api/v1';
+      this.settingsBaseUrlEl.value = settings.base_url || 'https://jesse.my/api/v1';
     }
     if (this.settingsModelEl && settings.model) {
       this.settingsModelEl.value = settings.model;

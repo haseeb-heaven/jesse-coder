@@ -29,7 +29,7 @@ except ImportError:
     pass
 
 DEFAULT_API_KEY = os.getenv("JESSE_API_KEY", "")
-DEFAULT_BASE_URL = os.getenv("JESSE_BASE_URL", "https://jesse.solidsf.com/api/v1")
+DEFAULT_BASE_URL = os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1")
 DEFAULT_MODEL = os.getenv("JESSE_MODEL", "jesse-prod")
 
 DEFAULT_CODING_SYSTEM_PROMPT = """\

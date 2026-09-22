@@ -50,12 +50,12 @@ class JesseClient:
         self.config.validate()
 
         # Root URL without trailing slash, used by REST helpers
-        self._base_url = self.config.base_url.rstrip('/')
-        self._api_key = self.config.api_key
+        self._base_url = self.config.base_url.strip().rstrip('/')
+        self._api_key = self.config.api_key.strip()
 
         self._client = OpenAI(
-            base_url=self.config.base_url,
-            api_key=self.config.api_key,
+            base_url=self._base_url,
+            api_key=self._api_key,
             timeout=self.config.timeout,
             max_retries=self.config.max_retries,
         )

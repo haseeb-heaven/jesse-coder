@@ -12,7 +12,7 @@ API_KEY = os.getenv("JESSE_API_KEY")
 def test_live_streaming_completion():
     config = JesseConfig(
         api_key=API_KEY,
-        base_url="https://jesse.solidsf.com/api/v1",
+        base_url="https://jesse.my/api/v1",
         model="jesse-prod",
         max_tokens=60,
     )
@@ -40,7 +40,7 @@ def test_live_streaming_completion():
 def test_live_multi_turn():
     config = JesseConfig(
         api_key=API_KEY,
-        base_url="https://jesse.solidsf.com/api/v1",
+        base_url="https://jesse.my/api/v1",
         model="jesse-prod",
         max_tokens=30,
     )
