@@ -16,11 +16,21 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+import httpx
+
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # Constants aligned with open-agent
 LIVE_OUTPUT_MAX_BUFFER_CHARS = 100_000
 DEFAULT_TIMEOUT_SECONDS = 30.0
+
+# Online (remote) execution via the hosted Code Runner service (JDoodle-backed).
+# The service carries its own compiler credentials, so only its URL is needed here.
+DEFAULT_ONLINE_COMPILER_URL = "https://code-runner-plugin.vercel.app"
+EXECUTION_BACKEND_LOCAL = "local"
+EXECUTION_BACKEND_ONLINE = "online"
+# Compiled languages that a serverless runtime cannot build locally are routed online.
+ONLINE_COMPILER_LANGUAGES = {"cpp", "c++", "cxx", "cc", "c", "javascript", "js", "node"}
 
 # Regex for stripping ANSI escape sequences
 ANSI_ESCAPE_PATTERN = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
@@ -48,6 +58,16 @@ def append_and_truncate(current_buffer: str, chunk: str, max_size: int = LIVE_OU
 
     chars_to_trim = total_len - max_size
     return current_buffer[chars_to_trim:] + chunk, True
+
+
+def _post_online_compiler(url: str, payload: Dict[str, Any], timeout: float) -> Tuple[int, Dict[str, Any]]:
+    """POST a run request to the hosted Code Runner service and return (http_status, body)."""
+    response = httpx.post(url, json=payload, timeout=timeout)
+    try:
+        body: Dict[str, Any] = response.json()
+    except ValueError:
+        body = {"output": response.text}
+    return response.status_code, body
 
 
 @dataclass
@@ -81,10 +101,25 @@ class CodeExecutor:
         default_cwd: Optional[str] = None,
         python_bin: Optional[str] = None,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
+        execution_backend: Optional[str] = None,
+        online_compiler_url: Optional[str] = None,
     ) -> None:
         self.default_cwd = default_cwd or os.getcwd()
         self.timeout = timeout
         self.python_bin = python_bin or self._discover_python_bin()
+        backend = (
+            execution_backend
+            or os.getenv("JESSE_EXECUTION_BACKEND")
+            or EXECUTION_BACKEND_LOCAL
+        ).strip().lower()
+        self.execution_backend = (
+            backend if backend in (EXECUTION_BACKEND_LOCAL, EXECUTION_BACKEND_ONLINE) else EXECUTION_BACKEND_LOCAL
+        )
+        self.online_compiler_url = (
+            online_compiler_url
+            or os.getenv("JESSE_ONLINE_COMPILER_URL")
+            or DEFAULT_ONLINE_COMPILER_URL
+        ).rstrip("/")
 
     @staticmethod
     def _discover_python_bin() -> str:
@@ -414,6 +449,76 @@ class CodeExecutor:
             stdin_data=stdin_data,
         )
 
+    def _execute_online(
+        self,
+        code: str,
+        language: str = "python",
+        stdin_data: Optional[str] = None,
+        timeout: Optional[float] = None,
+        compile_only: bool = False,
+    ) -> ExecutionResult:
+        """
+        Execute code through the hosted Code Runner service (JDoodle-backed).
+
+        The service owns the compiler credentials, so only its public URL is needed.
+        """
+        started = time.perf_counter()
+        request_timeout = max((timeout or self.timeout) + 10.0, 20.0)
+        payload = {
+            "code": code,
+            "language": language,
+            "input": stdin_data,
+            "compileOnly": compile_only,
+        }
+        try:
+            status_code, data = _post_online_compiler(
+                f"{self.online_compiler_url}/run_code", payload, request_timeout
+            )
+        except Exception as exc:  # network, DNS and timeout failures
+            return ExecutionResult(
+                stdout="",
+                stderr=str(exc),
+                output="",
+                exit_code=None,
+                duration_ms=(time.perf_counter() - started) * 1000,
+                error=f"Online compiler request failed: {exc}",
+                language=language,
+            )
+
+        if status_code != 200:
+            message = (
+                str(data.get("error", data))[:300] if isinstance(data, dict) else str(data)[:300]
+            )
+            return ExecutionResult(
+                stdout="",
+                stderr=message,
+                output="",
+                exit_code=None,
+                duration_ms=(time.perf_counter() - started) * 1000,
+                error=f"Online compiler returned HTTP {status_code}: {message}",
+                language=language,
+            )
+
+        # The service wraps responses inconsistently: Python runs come back as
+        # {"result": {...}} while JDoodle languages return the payload directly.
+        inner = (
+            data.get("result")
+            if isinstance(data, dict) and isinstance(data.get("result"), dict)
+            else data
+        )
+        output = str(inner.get("output", "") or "")
+        status = str(inner.get("statusCode", "") or "")
+        exit_code = int(status) if status.isdigit() else (0 if output else 1)
+
+        return ExecutionResult(
+            stdout=output,
+            stderr="",
+            output=output,
+            exit_code=exit_code,
+            duration_ms=(time.perf_counter() - started) * 1000,
+            language=language,
+        )
+
     def execute_code(
         self,
         code: str,
@@ -422,11 +527,26 @@ class CodeExecutor:
         timeout: Optional[float] = None,
         on_output: Optional[Callable[[str], None]] = None,
         stdin_data: Optional[str] = None,
+        backend: Optional[str] = None,
+        compile_only: bool = False,
     ) -> ExecutionResult:
         """
         Route code to the appropriate language execution handler.
+
+        backend: "local" (default) spawns a local subprocess; "online" sends compiled
+        languages (cpp / javascript / c) to the hosted Code Runner service. Python
+        always runs locally because the online service does not feed stdin to Python.
         """
         lang = language.lower().strip()
+        backend = (backend or self.execution_backend).strip().lower()
+        if backend == EXECUTION_BACKEND_ONLINE and lang in ONLINE_COMPILER_LANGUAGES:
+            return self._execute_online(
+                code,
+                language=lang,
+                stdin_data=stdin_data,
+                timeout=timeout,
+                compile_only=compile_only,
+            )
         if lang in ("python", "py", "python3"):
             return self.execute_python(code, cwd=cwd, timeout=timeout, on_output=on_output, stdin_data=stdin_data)
         elif lang in ("cpp", "c++", "cxx", "cc"):

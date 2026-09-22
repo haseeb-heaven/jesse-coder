@@ -315,6 +315,15 @@ is set). They verify:
 - **Buffer Safety**: Live execution streams cap memory consumption at 100,000 characters to prevent memory exhaustion.
 - **Secret Protection**: API keys are masked in logs and exceptions (`jess...0001`), and never hardcoded in source files.
 
+### Execution Backends
+
+| Backend | Env var | Behaviour |
+| :--- | :--- | :--- |
+| `local` (default) | `JESSE_EXECUTION_BACKEND=local` | Spawns local subprocesses (Python, C++, JavaScript, Shell). |
+| `online` | `JESSE_EXECUTION_BACKEND=online` | Routes compiled languages (C++ / JavaScript / C) to the hosted [Code Runner](https://github.com/haseeb-heaven/coderunner-chatgpt) service (`JESSE_ONLINE_COMPILER_URL`, default `https://code-runner-plugin.vercel.app`), which carries its own JDoodle credentials server-side. Python always runs locally. |
+
+This makes C++/JavaScript execution possible on hosts without local compilers (e.g. serverless deployments).
+
 ---
 
 ## 📄 License
