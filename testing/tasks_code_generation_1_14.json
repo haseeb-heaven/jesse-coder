@@ -1,0 +1,128 @@
+[
+  {
+    "id": "task_01",
+    "language": "python",
+    "mode": "generate",
+    "title": "Circular Queue",
+    "task": "Implement a circular queue with capacity 3. The queue must reuse freed positions after dequeue operations. PEEK must return the oldest element currently stored in the queue.",
+    "input": "3 9\nENQ 10\nENQ 20\nENQ 30\nDEQ\nENQ 40\nPEEK\nDEQ\nDEQ\nDEQ\n",
+    "expected_output": "OK\nOK\nOK\n10\nOK\n20\n20\n30\n40\n"
+  },
+  {
+    "id": "task_02",
+    "language": "python",
+    "mode": "generate",
+    "title": "LRU Cache",
+    "task": "Implement an LRU cache with capacity 2. Reading an existing key must make it the most recently used entry. When the cache exceeds capacity, remove the least recently used key.",
+    "input": "2 7\nPUT 1 10\nPUT 2 20\nGET 1\nPUT 3 30\nGET 2\nGET 3\nGET 1\n",
+    "expected_output": "10\n-1\n30\n10\n"
+  },
+  {
+    "id": "task_03",
+    "language": "python",
+    "mode": "generate",
+    "title": "Sliding Window Rate Limiter",
+    "task": "Allow at most 3 successful requests during any 10-second window. Rejected requests must not consume rate-limit capacity.",
+    "input": "3 10 7\n0\n1\n2\n3\n10\n11\n12\n",
+    "expected_output": "ALLOW\nALLOW\nALLOW\nBLOCK\nALLOW\nALLOW\nALLOW\n"
+  },
+  {
+    "id": "task_04",
+    "language": "python",
+    "mode": "generate",
+    "title": "Shortest Path",
+    "task": "Compute the shortest distance from node 0 to every node in a directed graph containing only non-negative edge weights.\n\nInput format:\n- First line: N M S where N is the number of nodes (numbered 0 to N-1), M is the number of directed edges, and S is the source node.\n- Next M lines: U V W, a directed edge from U to V with non-negative weight W.\n\nOutput format:\n- Print the N shortest distances from S to nodes 0, 1, ..., N-1 on a single line, separated by single spaces, in node order.\n- Print INF for any node unreachable from S.\n- Read the graph from stdin and print only that single line: no labels, no node names, no extra text.",
+    "input": "5 6 0\n0 1 4\n0 2 1\n2 1 2\n1 3 1\n2 3 5\n3 4 3\n",
+    "expected_output": "0 3 1 4 7\n"
+  },
+  {
+    "id": "task_05",
+    "language": "python",
+    "mode": "generate",
+    "title": "Inventory Transaction",
+    "task": "Process purchase transactions atomically. If any requested product has insufficient stock, reject the entire purchase without modifying any inventory. The total cost must include the requested quantity of every product.",
+    "input": "3\nA 5 10\nB 2 20\nC 10 3\n3\nBUY 2 A 2 B 1\nBUY 2 A 2 B 2\nRESTOCK B 3\n",
+    "expected_output": "OK 40.00\nREJECTED\nRESTOCKED\nSTOCK A=3 B=4 C=10\n"
+  },
+  {
+    "id": "task_06",
+    "language": "python",
+    "mode": "generate",
+    "title": "Payment Aggregation",
+    "task": "Calculate the total amount of successful paid transactions for every customer. Pending and refunded transactions must be ignored. Sort customers by total paid amount from highest to lowest.",
+    "input": "6\nalice 50 paid\nbob 70 paid\nalice 30 paid\nbob 20 refunded\ncarol 100 pending\nalice 10 refunded\n",
+    "expected_output": "alice 80\nbob 70\n"
+  },
+  {
+    "id": "task_07",
+    "language": "python",
+    "mode": "generate",
+    "title": "Merge Time Intervals",
+    "task": "Merge overlapping or directly touching intervals. Return the resulting intervals ordered by starting position.",
+    "input": "6\n1 3\n2 6\n8 10\n9 12\n15 18\n18 20\n",
+    "expected_output": "1 6\n8 12\n15 20\n"
+  },
+  {
+    "id": "task_08",
+    "language": "python",
+    "mode": "generate",
+    "title": "Binary Search Tree",
+    "task": "Insert values into a binary search tree. Smaller values must be placed in the left subtree and larger values in the right subtree. Print the inorder traversal and answer search queries.",
+    "input": "8\n8 3 10 1 6 14 4 7\n3\n6\n14\n5\n",
+    "expected_output": "1 3 4 6 7 8 10 14\nFOUND\nFOUND\nNOT FOUND\n"
+  },
+  {
+    "id": "task_09",
+    "language": "python",
+    "mode": "generate",
+    "title": "Dependency Build Order",
+    "task": "Determine a valid build order for projects. A dependency A B means A must be completed before B. When multiple projects are available, process them according to their original declaration order.",
+    "input": "5 5\nA B C D E\nA B\nA C\nB D\nC D\nD E\n",
+    "expected_output": "A B C D E\n"
+  },
+  {
+    "id": "task_10",
+    "language": "python",
+    "mode": "generate",
+    "title": "Video Watch Time",
+    "task": "Calculate the total amount of unique video watch time. Overlapping viewing intervals must be merged so that the same seconds are not counted more than once.",
+    "input": "5\n0 10\n5 15\n20 30\n28 40\n45 50\n",
+    "expected_output": "40\n"
+  },
+  {
+    "id": "task_11",
+    "language": "python",
+    "mode": "generate",
+    "title": "Weighted Job Scheduling",
+    "task": "Given a set of jobs with an identifier, start time, end time, and profit, select a set of non-overlapping jobs that maximizes total profit. A job starting exactly when another job ends is allowed. Print the maximum profit and the selected job identifiers in execution order.",
+    "input": "10\nA 1 4 5\nB 3 5 1\nC 0 6 8\nD 4 7 4\nE 3 9 6\nF 5 9 5\nG 6 10 4\nH 8 11 7\nI 8 12 3\nJ 11 14 6\n",
+    "expected_output": "MAX_PROFIT 22\nJOBS A D H J\n"
+  },
+  {
+    "id": "task_12",
+    "language": "cpp",
+    "mode": "generate",
+    "title": "Dynamic Connectivity",
+    "task": "Maintain disjoint groups of nodes using union operations. CONNECTED must report whether two nodes belong to the same connected component. SIZE must report the number of nodes in the component containing the requested node.",
+    "input": "7 12\nUNION 0 1\nUNION 1 2\nCONNECTED 0 2\nSIZE 1\nCONNECTED 0 4\nUNION 3 4\nUNION 2 4\nSIZE 3\nCONNECTED 0 4\nUNION 5 6\nSIZE 6\nCONNECTED 4 6\n",
+    "expected_output": "YES\n3\nNO\n5\nYES\n2\nNO\n"
+  },
+  {
+    "id": "task_13",
+    "language": "javascript",
+    "mode": "generate",
+    "title": "Event Stream Deduplication",
+    "task": "Process timestamped user events. An event is accepted only if the same user and event type has not already been accepted during the previous 5 seconds. An accepted event at time T expires at time T+5. Rejected events do not reset the timer.",
+    "input": "9\n0 u1 click\n1 u1 click\n2 u2 click\n5 u1 click\n6 u1 view\n7 u2 click\n8 u1 click\n11 u1 view\n12 u2 click\n",
+    "expected_output": "ACCEPT\nDROP\nACCEPT\nACCEPT\nACCEPT\nACCEPT\nDROP\nACCEPT\nACCEPT\n"
+  },
+  {
+    "id": "task_14",
+    "language": "python",
+    "mode": "generate",
+    "title": "Limit Order Matching Engine",
+    "task": "Process limit BUY and SELL orders using price-time priority. A BUY order matches the lowest available SELL price that does not exceed its limit. A SELL order matches the highest available BUY price that meets its limit. Orders at the same price are matched FIFO. The trade price is the price of the resting order. Print every trade, then print the remaining BUY book ordered by descending price and FIFO, followed by the remaining SELL book ordered by ascending price and FIFO.",
+    "input": "7\nBUY B1 5 100\nBUY B2 3 101\nSELL S1 4 99\nSELL S2 5 101\nBUY B3 4 102\nSELL S3 2 100\nBUY B4 2 100\n",
+    "expected_output": "TRADE B2 S1 3 101\nTRADE B1 S1 1 100\nTRADE B3 S2 4 101\nTRADE B1 S3 2 100\nBIDS\nB1 2 100\nB4 2 100\nASKS\nS2 1 101\n"
+  }
+]
