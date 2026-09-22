@@ -5,10 +5,14 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
 # Activate virtual environment if available
-if [ -f "/Users/haseeb-mir/Documents/Code/Python/env/bin/activate" ]; then
-    source "/Users/haseeb-mir/Documents/Code/Python/env/bin/activate"
+if [ -n "$VIRTUAL_ENV" ]; then
+    : # already in active virtual environment
+elif [ -f "$DIR/.venv/bin/activate" ]; then
+    source "$DIR/.venv/bin/activate"
 elif [ -f "$DIR/env/bin/activate" ]; then
     source "$DIR/env/bin/activate"
+elif [ -f "$DIR/../env/bin/activate" ]; then
+    source "$DIR/../env/bin/activate"
 fi
 
 # Ensure frontend bundle exists

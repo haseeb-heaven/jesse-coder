@@ -5,29 +5,29 @@
 - **Passed**: 1
 - **Failed**: 9
 - **Pass Rate**: 10.0%
-- **Timestamp**: 2026-09-22 05:29:29
+- **Timestamp**: 2026-09-22 05:33:44
 
 ## Summary Table
 
 | Task ID | Title | Language | Status | Execution Time | Notes |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| `task_01` | Circular Queue | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:1: error: unknown type name 'def' |
-| `task_02` | LRU Cache | `python` | ✅ PASS | 54.3ms | Matches expected output |
-| `task_03` | Sliding Window Rate Limiter | `javascript` | ❌ FAIL | 352.5ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpnjejsjql.js:1 |
-| `task_04` | Shortest Path | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:1:1: error: unknown type name 'import' |
-| `task_05` | Inventory Transaction | `python` | ❌ FAIL | 56.7ms | Output mismatch. |
-| `task_06` | Payment Aggregation | `javascript` | ❌ FAIL | 45.1ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmptu_4sd36.js:1 |
-| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | 37.6ms | Output mismatch. |
-| `task_08` | Binary Search Tree | `cpp` | ❌ FAIL | 0.0ms | Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpw1iw7mqy.cpp:2:5: error: expected class name |
-| `task_09` | Dependency Build Order | `javascript` | ❌ FAIL | 51.0ms | /private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp4nmee1qm.js:1 |
-| `task_10` | Video Watch Time | `python` | ❌ FAIL | 36.1ms | Output mismatch. |
+| `task_01` | Circular Queue | `python` | ❌ FAIL | 42.3ms | Output mismatch. |
+| `task_02` | LRU Cache | `python` | ✅ PASS | 49.4ms | Matches expected output |
+| `task_03` | Sliding Window Rate Limiter | `python` | ❌ FAIL | 23.3ms | Output mismatch. |
+| `task_04` | Shortest Path | `python` | ❌ FAIL | 37.4ms | Output mismatch. |
+| `task_05` | Inventory Transaction | `python` | ❌ FAIL | 26.4ms | Output mismatch. |
+| `task_06` | Payment Aggregation | `python` | ❌ FAIL | 38.4ms | Output mismatch. |
+| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | 30.4ms | Output mismatch. |
+| `task_08` | Binary Search Tree | `python` | ❌ FAIL | 35.1ms | Output mismatch. |
+| `task_09` | Dependency Build Order | `python` | ❌ FAIL | 48.3ms | Output mismatch. |
+| `task_10` | Video Watch Time | `python` | ❌ FAIL | 43.3ms | Output mismatch. |
 
 ## Detailed Task Results
 
-### task_01 - Circular Queue (CPP) [FAIL]
+### task_01 - Circular Queue (PYTHON) [FAIL]
 
 #### Extracted Code:
-```cpp
+```python
 def solve(*args, **kwargs):
     """Deterministic algorithmic implementation by Jesse."""
     pass
@@ -52,29 +52,25 @@ OK
 
 #### Actual Output:
 ```
-(none)
+Jesse coding solver ready.
+
 ```
 
 #### Diagnostics:
 ```
-Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:1: error: unknown type name 'def'
-    1 | def solve(*args, **kwargs):
-      | ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:12: error: use of undeclared identifier 'args'
-    1 | def solve(*args, **kwargs):
-      |            ^~~~
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:20: error: use of undeclared identifier 'kwargs'
-    1 | def solve(*args, **kwargs):
-      |                    ^~~~~~
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:1:27: error: expected ';' after top level declarator
-    1 | def solve(*args, **kwargs):
-      |                           ^
-      |                           ;
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpp44f1hew.cpp:2:5: error: expected unqualified-id
-    2 |     """Deterministic algorithmic implementation by Jesse."""
-      |     ^
-5 errors generated.
-
+Output mismatch.
+Expected:
+OK
+OK
+OK
+10
+OK
+20
+20
+30
+40
+Got:
+Jesse coding solver ready.
 ```
 
 ---
@@ -189,10 +185,10 @@ if __name__ == '__main__':
 
 ---
 
-### task_03 - Sliding Window Rate Limiter (JAVASCRIPT) [FAIL]
+### task_03 - Sliding Window Rate Limiter (PYTHON) [FAIL]
 
 #### Extracted Code:
-```javascript
+```python
 def solve(*args, **kwargs):
     """Deterministic algorithmic implementation by Jesse."""
     pass
@@ -215,35 +211,31 @@ ALLOW
 
 #### Actual Output:
 ```
-(none)
+Jesse coding solver ready.
+
 ```
 
 #### Diagnostics:
 ```
-/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpnjejsjql.js:1
-def solve(*args, **kwargs):
-    ^^^^^
-
-SyntaxError: Unexpected identifier 'solve'
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at Module._compile (node:internal/modules/cjs/loader:1755:20)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-
-Node.js v22.23.2
-
+Output mismatch.
+Expected:
+ALLOW
+ALLOW
+ALLOW
+BLOCK
+ALLOW
+ALLOW
+ALLOW
+Got:
+Jesse coding solver ready.
 ```
 
 ---
 
-### task_04 - Shortest Path (CPP) [FAIL]
+### task_04 - Shortest Path (PYTHON) [FAIL]
 
 #### Extracted Code:
-```cpp
+```python
 import heapq
 import sys
 
@@ -294,33 +286,25 @@ if __name__ == '__main__':
 
 #### Actual Output:
 ```
-(none)
+Node 0: 0
+Node 1: 3
+Node 2: 1
+Node 3: 4
+Node 4: 7
+
 ```
 
 #### Diagnostics:
 ```
-Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:1:1: error: unknown type name 'import'
-    1 | import heapq
-      | ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:1:13: error: expected ';' after top level declarator
-    1 | import heapq
-      |             ^
-      |             ;
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:7:5: error: expected unqualified-id
-    7 |     for u, v, w in edges:
-      |     ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:12:10: error: use of undeclared identifier 'start_node'
-   12 |     dist[start_node] = 0
-      |          ^~~~~~~~~~
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:12:5: error: a type specifier is required for all declarations
-   12 |     dist[start_node] = 0
-      |     ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpzul7sr_x.cpp:12:25: error: expected ';' after top level declarator
-   12 |     dist[start_node] = 0
-      |                         ^
-      |                         ;
-6 errors generated.
-
+Output mismatch.
+Expected:
+0 3 1 4 7
+Got:
+Node 0: 0
+Node 1: 3
+Node 2: 1
+Node 3: 4
+Node 4: 7
 ```
 
 ---
@@ -366,10 +350,10 @@ Jesse coding solver ready.
 
 ---
 
-### task_06 - Payment Aggregation (JAVASCRIPT) [FAIL]
+### task_06 - Payment Aggregation (PYTHON) [FAIL]
 
 #### Extracted Code:
-```javascript
+```python
 def solve(*args, **kwargs):
     """Deterministic algorithmic implementation by Jesse."""
     pass
@@ -387,27 +371,18 @@ bob 70
 
 #### Actual Output:
 ```
-(none)
+Jesse coding solver ready.
+
 ```
 
 #### Diagnostics:
 ```
-/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmptu_4sd36.js:1
-def solve(*args, **kwargs):
-    ^^^^^
-
-SyntaxError: Unexpected identifier 'solve'
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at Module._compile (node:internal/modules/cjs/loader:1755:20)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-
-Node.js v22.23.2
-
+Output mismatch.
+Expected:
+alice 80
+bob 70
+Got:
+Jesse coding solver ready.
 ```
 
 ---
@@ -451,10 +426,10 @@ Jesse coding solver ready.
 
 ---
 
-### task_08 - Binary Search Tree (CPP) [FAIL]
+### task_08 - Binary Search Tree (PYTHON) [FAIL]
 
 #### Extracted Code:
-```cpp
+```python
 class BSTNode:
     def __init__(self, val: int):
         self.val = val
@@ -522,31 +497,28 @@ NOT FOUND
 
 #### Actual Output:
 ```
-(none)
+In-order traversal: [20, 30, 40, 50, 60, 70, 80]
+
 ```
 
 #### Diagnostics:
 ```
-Compilation failed: /var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpw1iw7mqy.cpp:2:5: error: expected class name
-    2 |     def __init__(self, val: int):
-      |     ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpw1iw7mqy.cpp:54:35: error: expected '{' after base class list
-   54 |     assert bst.search(99) is False
-      |                                   ^
-/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmpw1iw7mqy.cpp:54:35: error: expected ';' after class
-   54 |     assert bst.search(99) is False
-      |                                   ^
-      |                                   ;
-3 errors generated.
-
+Output mismatch.
+Expected:
+1 3 4 6 7 8 10 14
+FOUND
+FOUND
+NOT FOUND
+Got:
+In-order traversal: [20, 30, 40, 50, 60, 70, 80]
 ```
 
 ---
 
-### task_09 - Dependency Build Order (JAVASCRIPT) [FAIL]
+### task_09 - Dependency Build Order (PYTHON) [FAIL]
 
 #### Extracted Code:
-```javascript
+```python
 def solve(*args, **kwargs):
     """Deterministic algorithmic implementation by Jesse."""
     pass
@@ -563,27 +535,17 @@ A B C D E
 
 #### Actual Output:
 ```
-(none)
+Jesse coding solver ready.
+
 ```
 
 #### Diagnostics:
 ```
-/private/var/folders/q0/rj0k1xgn28x14thfz4gnbm5c0000gn/T/tmp4nmee1qm.js:1
-def solve(*args, **kwargs):
-    ^^^^^
-
-SyntaxError: Unexpected identifier 'solve'
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at Module._compile (node:internal/modules/cjs/loader:1755:20)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-
-Node.js v22.23.2
-
+Output mismatch.
+Expected:
+A B C D E
+Got:
+Jesse coding solver ready.
 ```
 
 ---

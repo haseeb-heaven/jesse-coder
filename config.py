@@ -13,9 +13,15 @@ try:
 except ImportError:
     from exceptions import JesseConfigError
 
-DEFAULT_API_KEY = "jesse_test_demo00000000000000000000000001"
-DEFAULT_BASE_URL = "https://jesse.solidsf.com/api/v1"
-DEFAULT_MODEL = "jesse-prod"
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+DEFAULT_API_KEY = os.getenv("JESSE_API_KEY", "")
+DEFAULT_BASE_URL = os.getenv("JESSE_BASE_URL", "https://jesse.solidsf.com/api/v1")
+DEFAULT_MODEL = os.getenv("JESSE_MODEL", "jesse-prod")
 
 DEFAULT_CODING_SYSTEM_PROMPT = """\
 You are an elite software engineer and programmer. Your ONLY job is to write, fix, review, and analyse code.

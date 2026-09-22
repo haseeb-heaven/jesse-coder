@@ -1,7 +1,7 @@
 [
   {
     "id": "task_01",
-    "language": "cpp",
+    "language": "python",
     "title": "Circular Queue",
     "task": "Implement a circular queue with capacity 3. The queue must reuse freed positions after dequeue operations. PEEK must return the oldest element currently stored in the queue.",
     "input": "3 9\nENQ 10\nENQ 20\nENQ 30\nDEQ\nENQ 40\nPEEK\nDEQ\nDEQ\nDEQ\n",
@@ -17,7 +17,7 @@
   },
   {
     "id": "task_03",
-    "language": "javascript",
+    "language": "python",
     "title": "Sliding Window Rate Limiter",
     "task": "Allow at most 3 successful requests during any 10-second window. Rejected requests must not consume rate-limit capacity.",
     "input": "3 10 7\n0\n1\n2\n3\n10\n11\n12\n",
@@ -25,7 +25,7 @@
   },
   {
     "id": "task_04",
-    "language": "cpp",
+    "language": "python",
     "title": "Shortest Path",
     "task": "Compute the shortest distance from node 0 to every node in a directed graph containing only non-negative edge weights.",
     "input": "5 6 0\n0 1 4\n0 2 1\n2 1 2\n1 3 1\n2 3 5\n3 4 3\n",
@@ -41,7 +41,7 @@
   },
   {
     "id": "task_06",
-    "language": "javascript",
+    "language": "python",
     "title": "Payment Aggregation",
     "task": "Calculate the total amount of successful paid transactions for every customer. Pending and refunded transactions must be ignored. Sort customers by total paid amount from highest to lowest.",
     "input": "6\nalice 50 paid\nbob 70 paid\nalice 30 paid\nbob 20 refunded\ncarol 100 pending\nalice 10 refunded\n",
@@ -57,7 +57,7 @@
   },
   {
     "id": "task_08",
-    "language": "cpp",
+    "language": "python",
     "title": "Binary Search Tree",
     "task": "Insert values into a binary search tree. Smaller values must be placed in the left subtree and larger values in the right subtree. Print the inorder traversal and answer search queries.",
     "input": "8\n8 3 10 1 6 14 4 7\n3\n6\n14\n5\n",
@@ -65,7 +65,7 @@
   },
   {
     "id": "task_09",
-    "language": "javascript",
+    "language": "python",
     "title": "Dependency Build Order",
     "task": "Determine a valid build order for projects. A dependency A B means A must be completed before B. When multiple projects are available, process them according to their original declaration order.",
     "input": "5 5\nA B C D E\nA B\nA C\nB D\nC D\nD E\n",

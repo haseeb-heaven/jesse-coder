@@ -19,13 +19,12 @@ def main():
     print(" Jesse Coding Bot - Real-time Streaming Demonstration ")
     print("=" * 60)
 
-    # 1. Initialize configuration with Jesse API details
-    config = JesseConfig(
-        api_key="jesse_test_demo00000000000000000000000001",
-        base_url="https://jesse.solidsf.com/api/v1",
-        model="jesse-prod",
-        temperature=0.1,
-    )
+    # 1. Initialize configuration from environment / .env
+    try:
+        config = JesseConfig.from_env(temperature=0.1)
+    except Exception as e:
+        print(f"Configuration error: {e}\nPlease set JESSE_API_KEY in your environment or .env file.", file=sys.stderr)
+        return
 
     # 2. Instantiate bot
     try:

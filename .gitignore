@@ -1,4 +1,17 @@
-# Python
+# Environment Variables & Secrets (NEVER COMMIT)
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+*.pem
+*.key
+*.cert
+*.secret
+
+# Python Bytecode & Environments
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,6 +20,11 @@ __pycache__/
 env/
 venv/
 .venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution & Build
 build/
 develop-eggs/
 dist/
@@ -19,23 +37,60 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Testing & Caches
+# Testing & Code Quality
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
-*.log
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+*.pyre/
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# Databases & local state
+# Local Databases & State
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
 
-# OS files
+# Logs & Process Artifacts
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node / Web Frontend
+node_modules/
+npm-debug.log
+yarn.lock
+package-lock.json
+
+# macOS & OS Metadata
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 .AppleDouble
 .LSOverride
-Thumbs.db
+
+# IDEs & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace

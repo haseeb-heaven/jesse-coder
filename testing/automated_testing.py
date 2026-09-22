@@ -255,6 +255,7 @@ def run_automated_testing(
     tasks_file: Optional[Path] = None,
     models: Optional[List[str]] = None,
     task_id_filter: Optional[str] = None,
+    language_filter: Optional[str] = None,
 ) -> None:
     if tasks_file is None:
         tasks_file = Path(__file__).resolve().parent / "tasks.json"
@@ -263,6 +264,12 @@ def run_automated_testing(
 
     with open(tasks_file, "r", encoding="utf-8") as f:
         tasks = json.load(f)
+
+    if language_filter:
+        tasks = [t for t in tasks if t.get("language", "").lower() == language_filter.lower()]
+        if not tasks:
+            print(f"No tasks matched language filter '{language_filter}'.")
+            return
 
     if task_id_filter:
         tasks = [t for t in tasks if t.get("id") == task_id_filter or task_id_filter in t.get("id", "")]
@@ -366,6 +373,12 @@ if __name__ == "__main__":
         default=None,
         help="Specific task ID to run (e.g. task_02)",
     )
+    parser.add_argument(
+        "--lang",
+        type=str,
+        default=None,
+        help="Filter tasks by programming language (e.g. python)",
+    )
     args = parser.parse_args()
 
     selected_models: List[str] = []
@@ -383,4 +396,5 @@ if __name__ == "__main__":
         tasks_file=args.tasks_file,
         models=selected_models,
         task_id_filter=args.task,
+        language_filter=args.lang,
     )

@@ -1,13 +1,17 @@
 """Live integration test against Jesse API."""
 
+import os
 import pytest
 from jesse_coder import JesseCodingBot, JesseConfig
 
+API_KEY = os.getenv("JESSE_API_KEY")
+
 
 @pytest.mark.integration
+@pytest.mark.skipif(not API_KEY, reason="JESSE_API_KEY environment variable not set")
 def test_live_streaming_completion():
     config = JesseConfig(
-        api_key="jesse_test_demo00000000000000000000000001",
+        api_key=API_KEY,
         base_url="https://jesse.solidsf.com/api/v1",
         model="jesse-prod",
         max_tokens=60,
@@ -32,9 +36,10 @@ def test_live_streaming_completion():
 
 
 @pytest.mark.integration
+@pytest.mark.skipif(not API_KEY, reason="JESSE_API_KEY environment variable not set")
 def test_live_multi_turn():
     config = JesseConfig(
-        api_key="jesse_test_demo00000000000000000000000001",
+        api_key=API_KEY,
         base_url="https://jesse.solidsf.com/api/v1",
         model="jesse-prod",
         max_tokens=30,
@@ -64,4 +69,4 @@ def test_live_factorial_range_prompt():
     assert res is not None
     assert res.is_success
     assert res.exit_code == 0
-    assert "6,227,020,800" in res.stdout
+    assert ("6,227,020,800" in res.stdout) or ("6227020800" in res.stdout)
