@@ -6,7 +6,7 @@
     "pass_rate_pct": 0.0,
     "model": "jesse-prod",
     "output_matching": "tolerant (value labels & line breaks ignored; values and their order must match)",
-    "timestamp": "2026-09-22 10:39:17"
+    "timestamp": "2026-09-22 11:38:28"
   },
   "tasks": [
     {

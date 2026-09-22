@@ -6,7 +6,7 @@
     "pass_rate_pct": 0.0,
     "model": "jesse-prod",
     "output_matching": "tolerant (value labels & line breaks ignored; values and their order must match)",
-    "timestamp": "2026-09-22 07:16:18"
+    "timestamp": "2026-09-22 11:39:28"
   },
   "tasks": [
     {
@@ -132,7 +132,7 @@
       "language": "python",
       "passed": false,
       "equivalent_only": false,
-      "duration_ms": 80.2274169982411,
+      "duration_ms": 161.0914579941891,
       "expected_output": "DURATION 17\nPATH A D E G\n",
       "actual_output": "Jesse coding solver ready.\n",
       "error": "Output mismatch.\nExpected:\nDURATION 17\nPATH A D E G\nGot:\nJesse coding solver ready.",

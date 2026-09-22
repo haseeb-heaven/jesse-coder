@@ -1,6 +1,6 @@
 # JesseCoder Multi-Model Comparison Report
 
-- **Generated**: 2026-09-22 06:53:09
+- **Generated**: 2026-09-22 11:42:39
 - **Total Tasks**: 20
 - **Models Evaluated**: `jesse-prod`, `jesse-pristine`, `jesse`
 - **Output Matching**: tolerant (value labels & line breaks ignored; values and their order must match)
@@ -10,8 +10,8 @@
 | Model | Passed | Failed | Pass Rate | Avg Latency |
 | :--- | :---: | :---: | :---: | :---: |
 | `jesse-prod` | 3/20 | 17 | **15.0%** | 39.2ms |
-| `jesse-pristine` | 3/20 | 17 | **15.0%** | 44.0ms |
-| `jesse` | 3/20 | 17 | **15.0%** | 44.7ms |
+| `jesse-pristine` | 3/20 | 17 | **15.0%** | 40.4ms |
+| `jesse` | 3/20 | 17 | **15.0%** | 42.1ms |
 
 ## Task-by-Task Comparison Matrix
 

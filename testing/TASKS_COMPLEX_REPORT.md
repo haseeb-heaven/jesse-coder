@@ -6,7 +6,7 @@
 - **Failed**: 10
 - **Pass Rate**: 0.0%
 - **Output Matching**: tolerant (value labels & line breaks ignored; values and their order must match)
-- **Timestamp**: 2026-09-22 07:16:18
+- **Timestamp**: 2026-09-22 11:39:28
 
 ## Summary Table
 
@@ -21,7 +21,7 @@
 | `task_17` | TTL Key Value Store | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
 | `task_18` | Range Updates and Queries | `cpp` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
 | `task_19` | LFU Cache | `javascript` | ❌ FAIL | 0.0ms | Model returned a 'python' code block instead of 'javascript'; the code was not executed. |
-| `task_20` | DAG Critical Path | `python` | ❌ FAIL | 80.2ms | Output mismatch. |
+| `task_20` | DAG Critical Path | `python` | ❌ FAIL | 161.1ms | Output mismatch. |
 
 ## Detailed Task Results
 
