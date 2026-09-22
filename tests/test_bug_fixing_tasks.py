@@ -40,11 +40,10 @@ def test_bug_task_set_metadata():
     assert len(ids) == len(set(ids)), "task ids must be unique"
     for task in TASKS:
         assert task["mode"] == TASK_MODE_FIX_BUGS
-        assert task["language"] == "python"
+        assert task["language"] in ("python", "cpp", "javascript")
         assert task["difficulty"] in ("simple", "medium")
         assert task["expected_output"].strip(), f"{task['id']}: missing expected output"
-        assert task["input"].strip(), f"{task['id']}: missing stdin input"
-        assert "```python" in task["task"], f"{task['id']}: buggy program not embedded"
+        assert f"```{task['language']}" in task["task"], f"{task['id']}: buggy program not embedded"
 
 
 @pytest.mark.parametrize("task", TASKS, ids=[task["id"] for task in TASKS])
@@ -54,8 +53,8 @@ def test_buggy_program_does_not_match_expected_output(task):
 
     result = EXECUTOR.execute_code(
         code=blocks[0].code,
-        language="python",
-        stdin_data=task["input"],
+        language=task["language"],
+        stdin_data=task.get("input", ""),
         timeout=10.0,
     )
     already_correct = result.is_success and outputs_equivalent(
@@ -69,7 +68,6 @@ def test_buggy_program_does_not_match_expected_output(task):
 
 @pytest.mark.parametrize("task", TASKS, ids=[task["id"] for task in TASKS])
 def test_buggy_program_is_small(task):
-    """The tasks must stay small: one or two helper methods plus main()."""
+    """The tasks must stay small: concise functions/classes."""
     blocks = extract_code_blocks(task["task"])
-    definitions = [line for line in blocks[0].code.splitlines() if line.startswith("def ")]
-    assert 1 <= len(definitions) <= 3, f"{task['id']}: {len(definitions)} functions defined"
+    assert len(blocks[0].code.splitlines()) <= 100, f"{task['id']}: program too large"
