@@ -49,82 +49,71 @@
 </head>
 <body class="h-full flex flex-col bg-slate-50 dark:bg-[#080b12] text-slate-900 dark:text-slate-100 antialiased select-none transition-colors duration-200">
 
-  <!-- Header Bar -->
-  <header class="h-auto md:h-14 py-2 md:py-0 border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0d131f]/90 backdrop-blur px-3 md:px-6 flex items-center justify-between shrink-0 z-20 gap-2 flex-wrap sm:flex-nowrap">
-    <!-- Brand -->
+  <!-- Modern Cohesive Header Bar -->
+  <header class="h-14 border-b border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-[#0c1322]/95 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between shrink-0 z-30 shadow-sm gap-2">
+    <!-- Brand & Status -->
     <div class="flex items-center gap-3 shrink-0">
-      <div class="w-8 h-8 rounded-xl bg-cyan-100 dark:bg-cyan-950/80 border border-cyan-300 dark:border-cyan-500/40 flex items-center justify-center text-cyan-600 dark:text-cyan-400 font-bold shadow-lg shadow-cyan-500/10 text-base">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-sky-600 flex items-center justify-center text-white font-bold shadow-md shadow-cyan-500/20 text-base shrink-0">
         ⚡
       </div>
-      <div class="hidden sm:block">
+      <div class="flex items-center gap-2">
         <h1 class="font-bold text-sm tracking-wider text-slate-900 dark:text-slate-100 uppercase">JesseCoder</h1>
-        <p class="text-[10px] text-slate-500 font-mono">Autonomous Code Generation &amp; Isolated Execution</p>
+        <span class="hidden md:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/60">Autonomous Agent</span>
+      </div>
+      <!-- Status Badge -->
+      <div id="status-badge" class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-600 dark:text-emerald-400 shrink-0" title="API Status">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="font-semibold">ONLINE: jesse-prod</span>
       </div>
     </div>
 
-    <!-- Controls -->
-    <div class="flex items-center gap-1.5 md:gap-2 flex-wrap justify-end">
+    <!-- Action Toolbar (Equal Height Controls, No Misaligned Jaggies) -->
+    <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1 scrollbar-none">
 
-      <!-- Status Badge -->
-      <div id="status-badge" class="hidden xl:flex items-center px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-700 dark:text-slate-300 shrink-0">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
-        <span>ONLINE: jesse-prod</span>
-      </div>
-
-      <!-- Model Selector -->
-      <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 px-2 py-1 rounded-lg shrink-0" title="Jesse API Model">
-        <label for="model-select" class="text-[10px] text-slate-500 font-mono hidden sm:block">Model:</label>
-        <select id="model-select" class="bg-transparent text-xs font-mono text-cyan-600 dark:text-cyan-300 focus:outline-none cursor-pointer">
+      <!-- Engine & Language Cluster -->
+      <div class="flex items-center h-8 bg-slate-100 dark:bg-slate-900/90 border border-slate-300/80 dark:border-slate-700/80 rounded-lg px-2 shrink-0 gap-1.5 shadow-sm">
+        <label for="model-select" class="text-[10px] text-slate-500 font-mono hidden sm:inline">Model:</label>
+        <select id="model-select" class="bg-transparent text-xs font-mono text-cyan-600 dark:text-cyan-300 focus:outline-none cursor-pointer" title="Jesse API Model">
           <option value="jesse-prod" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">jesse-prod</option>
           <option value="jesse-pristine" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">jesse-pristine</option>
           <option value="jesse" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">jesse</option>
         </select>
-      </div>
-
-      <!-- Execution Language Picker -->
-      <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-cyan-900/60 px-2 py-1 rounded-lg shrink-0" title="Override execution language for Run Code">
-        <svg class="w-3 h-3 text-cyan-600 dark:text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <span class="text-slate-300 dark:text-slate-700">|</span>
+        <svg class="w-3 h-3 text-cyan-600 dark:text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3" />
         </svg>
-        <label for="lang-select" class="text-[10px] text-slate-500 font-mono hidden sm:block">Lang:</label>
-        <select id="lang-select" class="bg-transparent text-xs font-mono text-cyan-600 dark:text-cyan-300 focus:outline-none cursor-pointer">
+        <select id="lang-select" class="bg-transparent text-xs font-mono text-cyan-600 dark:text-cyan-300 focus:outline-none cursor-pointer" title="Target programming language">
           <option value="auto"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Auto-detect</option>
           <option value="python"     class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Python</option>
-          <option value="javascript" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">JavaScript (Node)</option>
-          <option value="typescript" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">TypeScript (tsx)</option>
+          <option value="javascript" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">JavaScript</option>
+          <option value="typescript" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">TypeScript</option>
           <option value="bash"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Bash / Shell</option>
-          <option value="ruby"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Ruby</option>
-          <option value="php"        class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">PHP</option>
           <option value="go"         class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Go</option>
           <option value="rust"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Rust</option>
           <option value="cpp"        class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">C++</option>
           <option value="c"          class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">C</option>
           <option value="java"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Java</option>
           <option value="swift"      class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Swift</option>
-          <option value="kotlin"     class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Kotlin</option>
-          <option value="r"          class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">R</option>
+          <option value="ruby"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Ruby</option>
+          <option value="php"        class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">PHP</option>
           <option value="lua"        class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Lua</option>
-          <option value="perl"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Perl</option>
         </select>
       </div>
 
-      <!-- Auto-Run Toggle -->
-      <label class="flex items-center gap-1.5 cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/80 dark:hover:bg-slate-800/80 border border-slate-300 dark:border-slate-800 px-2 py-1 rounded-lg transition shrink-0" title="Automatically execute extracted code">
-        <input type="checkbox" id="auto-run-toggle" class="sr-only peer" checked />
-        <div class="w-7 h-3.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500 relative"></div>
-        <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-cyan-600 dark:peer-checked:text-cyan-300">⚡ Auto-Run</span>
-      </label>
-
-      <!-- Auto-Repair Toggle & Retries Selector -->
-      <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 px-2 py-1 rounded-lg shrink-0" title="Self-healing auto-repair: feed error diagnostics back to fix broken code">
-        <label class="flex items-center gap-1.5 cursor-pointer">
-          <input type="checkbox" id="auto-repair-toggle" class="sr-only peer" checked />
-          <div class="w-7 h-3.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500 relative"></div>
-          <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-amber-600 dark:peer-checked:text-amber-300 font-semibold">🛠️ Auto-Fix</span>
+      <!-- Execution & Auto-Repair Cluster -->
+      <div class="flex items-center h-8 bg-slate-100 dark:bg-slate-900/90 border border-slate-300/80 dark:border-slate-700/80 rounded-lg px-2 shrink-0 gap-2 shadow-sm">
+        <label class="flex items-center gap-1.5 cursor-pointer" title="Auto-execute code on completion">
+          <input type="checkbox" id="auto-run-toggle" class="sr-only peer" checked />
+          <div class="w-6 h-3.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-cyan-500 relative"></div>
+          <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-cyan-600 dark:peer-checked:text-cyan-300 hidden sm:inline">Auto-Run</span>
         </label>
-        <span class="text-slate-300 dark:text-slate-700 text-[10px]">|</span>
-        <label for="retries-select" class="text-[10px] text-slate-500 font-mono hidden sm:inline" title="Maximum repair attempts">Max:</label>
-        <select id="retries-select" class="bg-transparent text-xs font-mono text-amber-600 dark:text-amber-300 focus:outline-none cursor-pointer" title="Max retries on error">
+        <span class="text-slate-300 dark:text-slate-700">|</span>
+        <label class="flex items-center gap-1.5 cursor-pointer" title="Self-healing auto-repair: feed error diagnostics back to fix code">
+          <input type="checkbox" id="auto-repair-toggle" class="sr-only peer" checked />
+          <div class="w-6 h-3.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-amber-500 relative"></div>
+          <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-amber-600 dark:peer-checked:text-amber-300 font-semibold hidden sm:inline">Auto-Fix</span>
+        </label>
+        <select id="retries-select" class="bg-transparent text-xs font-mono text-amber-600 dark:text-amber-300 focus:outline-none cursor-pointer" title="Max repair retries (min 3)">
           <option value="1" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">1</option>
           <option value="2" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">2</option>
           <option value="3" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200" selected>3</option>
@@ -133,45 +122,52 @@
         </select>
       </div>
 
-      <!-- Light / Dark Theme Toggle Button -->
-      <button id="btn-theme-toggle" class="flex items-center justify-center p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-300 transition shrink-0" title="Toggle Light / Dark Mode">
-        <!-- Sun icon (shown in dark mode) -->
-        <svg id="theme-sun-icon" class="w-4 h-4 hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-        <!-- Moon icon (shown in light mode) -->
-        <svg id="theme-moon-icon" class="w-4 h-4 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      </button>
+      <!-- Feature Buttons Cluster (Memory, Docs, RAW) -->
+      <div class="flex items-center h-8 bg-slate-100 dark:bg-slate-900/90 border border-slate-300/80 dark:border-slate-700/80 rounded-lg p-0.5 shrink-0 gap-0.5 shadow-sm">
+        <button id="btn-memory" class="flex items-center gap-1 px-2 h-7 rounded-md text-xs font-mono text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-violet-600 dark:hover:text-violet-400 transition" title="View &amp; manage Jesse's memory">
+          <span>🧠</span>
+          <span class="hidden md:inline">Memory</span>
+        </button>
+        <button id="btn-documents" class="flex items-center gap-1 px-2 h-7 rounded-md text-xs font-mono text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition" title="Store &amp; search documents">
+          <span>📄</span>
+          <span class="hidden md:inline">Docs</span>
+        </button>
+        <button id="btn-toggle-raw" class="flex items-center gap-1 px-2 h-7 rounded-md text-xs font-mono text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-cyan-600 dark:hover:text-cyan-400 transition" title="View raw Jesse API payload (Ctrl+R)">
+          <span>⚡</span>
+          <span class="hidden md:inline">RAW</span>
+        </button>
+      </div>
 
-      <!-- Memory Button -->
-      <button id="btn-memory" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-violet-100 dark:bg-slate-900 dark:hover:bg-violet-950/40 border border-slate-300 hover:border-violet-400 dark:border-slate-700/60 dark:hover:border-violet-700 text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-300 transition shrink-0" title="View &amp; manage Jesse's memory">
-        <span>🧠</span>
-        <span class="hidden sm:inline">Memory</span>
-      </button>
+      <!-- Utilities & Settings Cluster -->
+      <div class="flex items-center gap-1 shrink-0">
+        <!-- Settings Button -->
+        <button id="btn-settings" class="flex items-center gap-1.5 px-2.5 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300/80 dark:border-slate-700/80 text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-300 transition shadow-sm" title="Configure API key, base URL, and settings">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="hidden sm:inline">Settings</span>
+        </button>
 
-      <!-- Documents Button -->
-      <button id="btn-documents" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-100 dark:bg-slate-900 dark:hover:bg-emerald-950/40 border border-slate-300 hover:border-emerald-400 dark:border-slate-700/60 dark:hover:border-emerald-700 text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-300 transition shrink-0" title="Store &amp; search documents">
-        <span>📄</span>
-        <span class="hidden sm:inline">Docs</span>
-      </button>
+        <!-- Theme Toggle -->
+        <button id="btn-theme-toggle" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300/80 dark:border-slate-700/80 flex items-center justify-center text-slate-700 dark:text-slate-300 transition shadow-sm" title="Toggle Light / Dark Mode">
+          <svg id="theme-sun-icon" class="w-4 h-4 hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg id="theme-moon-icon" class="w-4 h-4 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
 
-      <!-- RAW API Button -->
-      <button id="btn-toggle-raw" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700/60 text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-300 transition shrink-0" title="View raw Jesse API payload (Ctrl+R)">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
-        <span class="hidden sm:inline">RAW API</span>
-      </button>
+        <!-- Reset Button -->
+        <button id="btn-reset" class="flex items-center gap-1 px-2.5 h-8 rounded-lg bg-slate-100 hover:bg-rose-50 dark:bg-slate-900 dark:hover:bg-rose-950/40 border border-slate-300/80 dark:border-slate-700/80 text-xs font-mono text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition shadow-sm" title="Clear conversation context">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span class="hidden sm:inline">Reset</span>
+        </button>
+      </div>
 
-      <!-- Reset -->
-      <button id="btn-reset" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-100 dark:bg-slate-900 dark:hover:bg-rose-950/40 border border-slate-300 hover:border-rose-400 dark:border-slate-800 dark:hover:border-rose-800 text-xs font-mono text-slate-700 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-300 transition shrink-0" title="Clear conversation context">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        <span class="hidden sm:inline">Reset</span>
-      </button>
     </div>
   </header>
 
@@ -326,10 +322,132 @@
     </section>
   </main>
 
+  <!-- ================================================================== -->
+  <!-- Settings & API Key Configuration Modal                              -->
+  <!-- ================================================================== -->
+  <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+    <div class="w-full max-w-xl rounded-2xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 bg-slate-100/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-cyan-100 dark:bg-cyan-950 flex items-center justify-center text-cyan-600 dark:text-cyan-400 font-bold text-sm">
+            ⚙️
+          </div>
+          <div>
+            <h3 class="text-sm font-bold font-mono text-slate-900 dark:text-slate-100">Settings &amp; Configuration</h3>
+            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Configure API credentials, endpoints, and runtime defaults</p>
+          </div>
+        </div>
+        <button id="btn-close-settings" class="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition" title="Close">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4 overflow-y-auto max-h-[75vh]">
+        <!-- API Key Section -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <span>🔑 Jesse API Key</span>
+              <span id="settings-key-badge" class="px-1.5 py-0.2 rounded text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Masked</span>
+            </label>
+            <span id="settings-current-key-display" class="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 truncate max-w-[220px]"></span>
+          </div>
+
+          <div class="relative flex items-center">
+            <input
+              id="settings-api-key"
+              type="password"
+              placeholder="Enter new key (e.g. jesse_live_...)"
+              class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg pl-3 pr-20 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-500 select-text"
+            />
+            <div class="absolute right-1.5 flex items-center gap-1">
+              <button
+                type="button"
+                id="btn-toggle-api-key-mask"
+                class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10px] font-mono text-slate-600 dark:text-slate-300 transition"
+                title="Toggle plain text / mask"
+              >
+                👁️ Show
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[10px] font-mono text-slate-500">Leave blank to keep existing key.</span>
+            <div class="flex items-center gap-2">
+              <span id="settings-verify-status" class="text-[10px] font-mono"></span>
+              <button
+                type="button"
+                id="btn-verify-key"
+                class="px-2.5 py-1 rounded-md bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs font-mono text-slate-700 dark:text-slate-300 transition"
+              >
+                Test Connection
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Endpoints & Parameters -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-3">
+          <div>
+            <label class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 block mb-1">Jesse API Base URL</label>
+            <input
+              id="settings-base-url"
+              type="text"
+              placeholder="https://jesse.solidsf.com/api/v1"
+              class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-500 select-text"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 block mb-1">Default Model</label>
+              <select id="settings-model" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none">
+                <option value="jesse-prod">jesse-prod</option>
+                <option value="jesse-pristine">jesse-pristine</option>
+                <option value="jesse">jesse</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 block mb-1">Auto-Fix Retries</label>
+              <select id="settings-retries" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none">
+                <option value="3">3 retries (default)</option>
+                <option value="4">4 retries</option>
+                <option value="5">5 retries</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vercel Deployment Notice -->
+        <div class="p-3 rounded-xl bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-200/80 dark:border-cyan-800/60 flex items-start gap-2.5 text-xs">
+          <span class="text-base text-cyan-600 dark:text-cyan-400 mt-0.5">☁️</span>
+          <div>
+            <span class="font-bold text-slate-800 dark:text-slate-200 font-mono">Vercel &amp; Cloud Ready</span>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed font-sans">
+              Settings are saved to your browser <code class="font-mono text-cyan-600 dark:text-cyan-300">localStorage</code> and transmitted via secure <code class="font-mono text-cyan-600 dark:text-cyan-300">X-Jesse-Api-Key</code> headers. On local instances, changes are automatically written to <code class="font-mono text-cyan-600 dark:text-cyan-300">.env</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 bg-slate-100/90 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
+        <button id="btn-cancel-settings" class="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs font-mono text-slate-700 dark:text-slate-300 transition">
+          Cancel
+        </button>
+        <button id="btn-save-settings" class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono text-xs font-bold shadow-md shadow-cyan-500/20 transition">
+          <span>💾 Save Settings</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- RAW Jesse API Modal -->
   <div id="raw-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 animate-fadeIn">
     <div class="w-full max-w-4xl max-h-[85vh] rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-cyan-800/60 shadow-2xl flex flex-col overflow-hidden">
-
       <!-- Modal Header -->
       <div class="px-5 py-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
@@ -374,9 +492,7 @@
     </div>
   </div>
 
-  <!-- ================================================================== -->
-  <!-- Feedback Correction Modal                                          -->
-  <!-- ================================================================== -->
+  <!-- Feedback Correction Modal -->
   <div id="feedback-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
     <div class="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-950 border border-rose-300 dark:border-rose-700/60 shadow-2xl flex flex-col overflow-hidden">
       <div class="px-5 py-3 bg-rose-50 dark:bg-rose-950/60 border-b border-rose-200 dark:border-rose-800 flex items-center justify-between shrink-0">
@@ -404,23 +520,23 @@
     </div>
   </div>
 
-  <!-- ================================================================== -->
-  <!-- Memory Panel Modal                                                  -->
-  <!-- ================================================================== -->
+  <!-- Memory Panel Modal -->
   <div id="memory-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-    <div class="w-full max-w-2xl max-h-[80vh] rounded-2xl bg-white dark:bg-slate-950 border border-violet-300 dark:border-violet-700/60 shadow-2xl flex flex-col overflow-hidden">
-      <div class="px-5 py-3 bg-violet-50 dark:bg-violet-950/60 border-b border-violet-200 dark:border-violet-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="text-xl">🧠</span>
+    <div class="w-full max-w-2xl max-h-[80vh] rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-violet-900/60 shadow-2xl flex flex-col overflow-hidden">
+      <div class="px-5 py-3.5 bg-slate-100/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-950 flex items-center justify-center text-violet-600 dark:text-violet-400 font-bold text-sm">
+            🧠
+          </div>
           <div>
-            <h3 class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200">Jesse's Memory</h3>
-            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Facts remembered for your API key</p>
+            <h3 class="text-sm font-bold font-mono text-slate-900 dark:text-slate-100">Jesse's Memory</h3>
+            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Facts remembered for your key across sessions</p>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="btn-memory-refresh" class="px-2.5 py-1 rounded-lg bg-violet-100 dark:bg-violet-900/50 hover:bg-violet-200 dark:hover:bg-violet-800 text-violet-700 dark:text-violet-300 text-xs font-mono transition" title="Refresh memory">↻ Refresh</button>
-          <button id="btn-memory-erase" class="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-950/60 hover:bg-rose-200 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 text-xs font-mono transition" title="Erase all memory">🗑️ Erase All</button>
-          <button id="btn-close-memory" class="p-1 rounded hover:bg-violet-100 dark:hover:bg-violet-900 text-slate-500 transition">
+        <div class="flex items-center gap-1.5">
+          <button id="btn-memory-refresh" class="px-2.5 py-1 rounded-lg bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono transition" title="Refresh memory">↻ Refresh</button>
+          <button id="btn-memory-erase" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 text-xs font-mono transition" title="Erase all memory">🗑️ Erase All</button>
+          <button id="btn-close-memory" class="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -433,30 +549,30 @@
     </div>
   </div>
 
-  <!-- ================================================================== -->
-  <!-- Documents Panel Modal                                               -->
-  <!-- ================================================================== -->
+  <!-- Documents Panel Modal -->
   <div id="docs-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-    <div class="w-full max-w-3xl max-h-[85vh] rounded-2xl bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-700/60 shadow-2xl flex flex-col overflow-hidden">
+    <div class="w-full max-w-3xl max-h-[85vh] rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-emerald-900/60 shadow-2xl flex flex-col overflow-hidden">
       <!-- Header -->
-      <div class="px-5 py-3 bg-emerald-50 dark:bg-emerald-950/60 border-b border-emerald-200 dark:border-emerald-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="text-xl">📄</span>
+      <div class="px-5 py-3.5 bg-slate-100/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+            📄
+          </div>
           <div>
-            <h3 class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200">Jesse Documents</h3>
-            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Store &amp; search documents for retrieval in future conversations</p>
+            <h3 class="text-sm font-bold font-mono text-slate-900 dark:text-slate-100">Jesse Documents</h3>
+            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Store &amp; search documents for retrieval in conversations</p>
           </div>
         </div>
-        <button id="btn-close-docs" class="p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900 text-slate-500 transition">
+        <button id="btn-close-docs" class="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
       <!-- Tabs -->
-      <div class="flex border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-950">
-        <button data-docs-tab="store" class="docs-tab px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 transition">📥 Store</button>
-        <button data-docs-tab="list"  class="docs-tab px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">📋 List</button>
-        <button data-docs-tab="search" class="docs-tab px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">🔍 Search</button>
+      <div class="flex border-b border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-950 px-4">
+        <button data-docs-tab="store" class="docs-tab px-4 py-2 text-xs font-mono font-bold border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 transition">📥 Store</button>
+        <button data-docs-tab="list"  class="docs-tab px-4 py-2 text-xs font-mono font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">📋 List</button>
+        <button data-docs-tab="search" class="docs-tab px-4 py-2 text-xs font-mono font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">🔍 Search</button>
       </div>
 
       <!-- Tab: Store -->

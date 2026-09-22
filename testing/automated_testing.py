@@ -154,20 +154,83 @@ def language_matches(block_language: str, task_language: str) -> bool:
     return task in _LANGUAGE_ALIASES and block in _LANGUAGE_ALIASES[task]
 
 
+def build_task_retry_prompt(
+    task: Dict[str, Any],
+    previous_code: str,
+    previous_error: str,
+    actual_output: str,
+    attempt: int,
+    max_retries: int,
+) -> str:
+    """
+    Constructs an error feedback prompt for automated testing retries.
+    Sends input, expected output, what was wrong, and previous code back to the model.
+    """
+    lang = task["language"]
+    title = task["title"]
+    sample_input = task["input"]
+    expected_output = task["expected_output"]
+    norm_actual = normalize_output(actual_output)
+    norm_expected = normalize_output(expected_output)
+
+    diag_lines = [f"Attempt {attempt} of {max_retries} failed."]
+    if previous_error:
+        diag_lines.append(f"Error / Diagnostics:\n{previous_error.strip()}")
+    if actual_output:
+        diag_lines.append(f"Actual Output:\n{norm_actual}")
+
+    diagnostic_summary = "\n".join(diag_lines)
+
+    return f"""\
+[AUTOMATED RETRY {attempt} OF {max_retries} - SELF-HEALING AUTO-REPAIR]
+Your previous code for '{title}' ({lang}) did NOT satisfy requirements.
+
+Task Description:
+{task['task']}
+
+Sample Input (stdin):
+{sample_input}
+
+Expected Output (stdout):
+{expected_output}
+
+Actual Output Produced:
+{norm_actual or '(none / error)'}
+
+What was wrong / Diagnostic Error:
+{diagnostic_summary}
+
+Previous Code Attempt:
+```{lang}
+{previous_code.strip() if previous_code else '# (no code extracted)'}
+```
+
+REQUIREMENTS:
+1. Carefully diagnose the error and logical defect above.
+2. Ensure the code reads from standard input and prints the EXACT expected output to standard output.
+3. Output ONLY the complete runnable corrected program wrapped in ```{lang} ... ``` code block.
+4. Do NOT output any markdown headers, conversational text, or explanations outside the code block.
+"""
+
+
 def evaluate_model_on_tasks(
     tasks: List[Dict[str, Any]],
     model_name: str,
     executor: CodeExecutor,
     strict_output: bool = False,
+    retries: int = 3,
 ) -> Dict[str, Any]:
     """
     Evaluates a list of tasks against a specific Jesse model one-by-one.
+    Supports self-healing auto-repair with minimum 3 retries on failure.
     """
+    effective_retries = max(3, retries) if retries > 0 else 0
     bot = JesseCodingBot(model=model_name)
     results: List[Dict[str, Any]] = []
 
+    retry_info_str = f"with up to {effective_retries} retries" if effective_retries > 0 else "retries disabled"
     print(f"\n===========================================================")
-    print(f"▶ Running Evaluation: Model = {model_name} ({len(tasks)} tasks)")
+    print(f"▶ Running Evaluation: Model = {model_name} ({len(tasks)} tasks, {retry_info_str})")
     print(f"===========================================================")
 
     for i, task in enumerate(tasks, start=1):
@@ -199,9 +262,6 @@ def evaluate_model_on_tasks(
             if code_block and code_block.code.strip() and not language_matches(
                 code_block.language, lang
             ):
-                # The extractor falls back to the largest block of any language, so a model
-                # answering in the wrong language must be reported, not executed as the
-                # task language (which would surface as a confusing SyntaxError).
                 extracted_code = code_block.code.strip()
                 exec_error = (
                     f"Model returned a '{code_block.language}' code block instead of "
@@ -235,8 +295,80 @@ def evaluate_model_on_tasks(
         except Exception as exc:
             exec_error = f"Evaluation exception: {exc}"
 
+        passed_initial = passed
+        passed_on_retry = False
+        retries_used = 0
+
+        # Self-healing retry loop if execution failed or output mismatched
+        if not passed and effective_retries > 0:
+            for retry_attempt in range(1, effective_retries + 1):
+                retries_used = retry_attempt
+                print(f"\n       ↺ [Retry {retry_attempt}/{effective_retries}] repairing {task_id}...", end=" ", flush=True)
+
+                retry_prompt = build_task_retry_prompt(
+                    task=task,
+                    previous_code=extracted_code,
+                    previous_error=exec_error or "Output mismatch or execution error.",
+                    actual_output=actual_output,
+                    attempt=retry_attempt,
+                    max_retries=effective_retries,
+                )
+
+                try:
+                    retry_response = bot.ask(retry_prompt)
+                    model_response = retry_response
+                    code_block = get_primary_code_block(retry_response, preferred_lang=lang)
+
+                    if code_block and code_block.code.strip() and not language_matches(
+                        code_block.language, lang
+                    ):
+                        extracted_code = code_block.code.strip()
+                        exec_error = (
+                            f"Model returned a '{code_block.language}' code block instead of "
+                            f"'{lang}'; the code was not executed."
+                        )
+                    elif code_block and code_block.code.strip():
+                        extracted_code = code_block.code.strip()
+                        exec_res = executor.execute_code(
+                            code=extracted_code,
+                            language=lang,
+                            stdin_data=stdin_input,
+                            timeout=20.0,
+                        )
+                        duration_ms += exec_res.duration_ms
+                        actual_output = exec_res.stdout
+
+                        norm_actual = normalize_output(actual_output)
+                        norm_expected = normalize_output(expected_output)
+
+                        passed = exec_res.is_success and outputs_equivalent(
+                            expected_output, actual_output, strict=strict_output
+                        )
+                        equivalent_only = passed and norm_actual != norm_expected
+                        if not exec_res.is_success:
+                            exec_error = exec_res.error or exec_res.stderr or f"Exit code {exec_res.exit_code}"
+                        elif not passed:
+                            exec_error = f"Output mismatch.\nExpected:\n{norm_expected}\nGot:\n{norm_actual}"
+                        else:
+                            exec_error = None
+                    else:
+                        exec_error = "No valid code block extracted from model response."
+
+                except Exception as exc:
+                    exec_error = f"Retry exception: {exc}"
+
+                if passed:
+                    passed_on_retry = True
+                    print(f"PASS (recovered on retry {retry_attempt})", end="", flush=True)
+                    break
+                else:
+                    print("FAIL", end="", flush=True)
+
+            print()
+
         status_str = "PASS" if passed else "FAIL"
-        print(f"{status_str} ({duration_ms:.1f}ms)")
+        if not (not passed_initial and effective_retries > 0):
+            print(f"{status_str} ({duration_ms:.1f}ms)")
         if not passed and exec_error:
             first_err = exec_error.splitlines()[0]
             print(f"       Diagnostic: {first_err[:90]}")
@@ -246,6 +378,9 @@ def evaluate_model_on_tasks(
             "title": title,
             "language": lang,
             "passed": passed,
+            "passed_initial": passed_initial,
+            "passed_on_retry": passed_on_retry,
+            "retries_used": retries_used,
             "equivalent_only": equivalent_only,
             "duration_ms": duration_ms,
             "expected_output": expected_output,
@@ -257,14 +392,19 @@ def evaluate_model_on_tasks(
 
     total = len(results)
     passed_count = sum(1 for r in results if r["passed"])
+    passed_initial_count = sum(1 for r in results if r.get("passed_initial"))
+    passed_retry_count = sum(1 for r in results if r.get("passed_on_retry"))
     pass_rate = (passed_count / total * 100) if total else 0.0
 
-    print(f"▶ Result for {model_name}: {passed_count}/{total} Passed ({pass_rate:.1f}%)\n")
+    print(f"▶ Result for {model_name}: {passed_count}/{total} Passed ({pass_rate:.1f}%) [initial: {passed_initial_count}, retry recoveries: {passed_retry_count}]\n")
 
     return {
         "model": model_name,
         "total": total,
         "passed": passed_count,
+        "passed_initial": passed_initial_count,
+        "passed_on_retry": passed_retry_count,
+        "retries_configured": effective_retries,
         "failed": total - passed_count,
         "pass_rate_pct": pass_rate,
         "output_matching": OUTPUT_MATCHING_STRICT if strict_output else OUTPUT_MATCHING_TOLERANT,
@@ -283,6 +423,10 @@ def generate_markdown_report(report_data: Dict[str, Any]) -> str:
     md.append(f"- **Passed**: {summary['passed']}")
     md.append(f"- **Failed**: {summary['failed']}")
     md.append(f"- **Pass Rate**: {summary['pass_rate_pct']:.1f}%")
+    if "retries_configured" in summary and summary["retries_configured"] > 0:
+        md.append(f"- **Retries Configured**: {summary['retries_configured']} (min 3 per task)")
+        md.append(f"- **Passed on Initial Attempt**: {summary.get('passed_initial', 0)}")
+        md.append(f"- **Passed via Auto-Repair Retry**: {summary.get('passed_on_retry', 0)}")
     md.append(f"- **Output Matching**: {summary.get('output_matching', OUTPUT_MATCHING_TOLERANT)}")
     equivalent_count = sum(1 for r in results if r.get("equivalent_only"))
     if equivalent_count:
@@ -296,21 +440,30 @@ def generate_markdown_report(report_data: Dict[str, Any]) -> str:
     md.append("| Task ID | Title | Language | Status | Execution Time | Notes |")
     md.append("| :--- | :--- | :--- | :---: | :---: | :--- |")
     for r in results:
-        badge = "✅ PASS" if r["passed"] else "❌ FAIL"
-        if r["passed"]:
+        if r.get("passed_on_retry"):
+            badge = f"✅ PASS (retry {r.get('retries_used', 1)})"
+            notes = f"Recovered on auto-repair retry {r.get('retries_used', 1)}"
+        elif r["passed"]:
+            badge = "✅ PASS"
             notes = (
                 "Equivalent output (labels/format ignored)"
                 if r.get("equivalent_only")
                 else "Matches expected output"
             )
         else:
+            badge = "❌ FAIL"
             notes = (r["error"] or "").splitlines()[0]
         md.append(f"| `{r['id']}` | {r['title']} | `{r['language']}` | {badge} | {r['duration_ms']:.1f}ms | {notes} |")
 
     md.append("\n## Detailed Task Results\n")
     for r in results:
-        badge = "PASS" if r["passed"] else "FAIL"
+        if r.get("passed_on_retry"):
+            badge = f"PASS (recovered on retry {r.get('retries_used')})"
+        else:
+            badge = "PASS" if r["passed"] else "FAIL"
         md.append(f"### {r['id']} - {r['title']} ({r['language'].upper()}) [{badge}]\n")
+        if r.get("retries_used"):
+            md.append(f"**Retries Attempted**: {r['retries_used']}\n")
         if r["extracted_code"]:
             md.append(f"#### Extracted Code:\n```{r['language']}\n{r['extracted_code']}\n```\n")
         else:
@@ -350,11 +503,13 @@ def generate_comparison_markdown(
     md.append("")
 
     md.append("## Overall Model Performance\n")
-    md.append("| Model | Passed | Failed | Pass Rate | Avg Latency |")
-    md.append("| :--- | :---: | :---: | :---: | :---: |")
+    md.append("| Model | Passed | Initial | On Retry | Failed | Pass Rate | Avg Latency |")
+    md.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |")
     for m in models_data:
         avg_time = sum(t["duration_ms"] for t in m["tasks"]) / len(m["tasks"]) if m["tasks"] else 0.0
-        md.append(f"| `{m['model']}` | {m['passed']}/{m['total']} | {m['failed']} | **{m['pass_rate_pct']:.1f}%** | {avg_time:.1f}ms |")
+        init_pass = m.get("passed_initial", m["passed"])
+        retry_pass = m.get("passed_on_retry", 0)
+        md.append(f"| `{m['model']}` | {m['passed']}/{m['total']} | {init_pass} | {retry_pass} | {m['failed']} | **{m['pass_rate_pct']:.1f}%** | {avg_time:.1f}ms |")
 
     md.append("\n## Task-by-Task Comparison Matrix\n")
     header = "| Task ID | Title | Language | " + " | ".join(f"`{m['model']}`" for m in models_data) + " |"
@@ -370,7 +525,10 @@ def generate_comparison_markdown(
         for m in models_data:
             match_task = next((t for t in m["tasks"] if t["id"] == tid), None)
             if match_task and match_task["passed"]:
-                cols.append("✅ PASS")
+                if match_task.get("passed_on_retry"):
+                    cols.append(f"✅ PASS (r{match_task.get('retries_used', 1)})")
+                else:
+                    cols.append("✅ PASS")
             else:
                 cols.append("❌ FAIL")
         md.append(f"| `{tid}` | {title} | `{lang}` | " + " | ".join(cols) + " |")
@@ -379,6 +537,7 @@ def generate_comparison_markdown(
     md.append("1. **Python Tasks**: All models demonstrate strong algorithmic synthesis on well-formed prompts (e.g. `task_02` LRU Cache passed across models). Default placeholder stubs appear when the prompt structure triggers template responses.")
     md.append("2. **Non-Python Tasks (C++ / JavaScript)**: Remote models frequently wrap Python syntax inside ````cpp```` or ````javascript```` fences, leading to compiler and runtime syntax errors.")
     md.append("3. **Model Consistency**: Across all evaluated models (`jesse-prod`, `jesse-pristine`, `jesse`), the core generation behavior is consistent, sharing identical pass/fail profiles on standard input tasks.")
+    md.append("4. **Auto-Repair Self Healing**: When retries are enabled (minimum 3 retries), error diagnostics and mismatched outputs are sent back with structured feedback to repair flawed solutions automatically.")
 
     return "\n".join(md)
 
@@ -390,6 +549,7 @@ def run_automated_testing(
     language_filter: Optional[str] = None,
     force_language: Optional[str] = None,
     strict_output: bool = False,
+    retries: int = 3,
 ) -> None:
     if tasks_file is None:
         tasks_file = Path(__file__).resolve().parent / "tasks.json"
@@ -418,20 +578,24 @@ def run_automated_testing(
     target_models = models or ["jesse-prod"]
     executor = CodeExecutor()
 
+    effective_retries = max(3, retries) if retries > 0 else 0
+    retry_msg = f"Retries: {effective_retries} max (min 3)" if effective_retries > 0 else "Retries: Disabled"
+
     print(f"===========================================================")
     print(f"JesseCoder Automated Testing Suite")
     print(f"Tasks File: {tasks_file.name} | Tasks: {len(tasks)} | Models: {', '.join(target_models)}")
-    print(
-        f"Output Matching: "
-        f"{OUTPUT_MATCHING_STRICT if strict_output else OUTPUT_MATCHING_TOLERANT}"
-    )
+    print(f"Output Matching: {OUTPUT_MATCHING_STRICT if strict_output else OUTPUT_MATCHING_TOLERANT} | {retry_msg}")
     print(f"===========================================================")
 
     all_models_data: List[Dict[str, Any]] = []
 
     for model_name in target_models:
         model_res = evaluate_model_on_tasks(
-            tasks, model_name, executor, strict_output=strict_output
+            tasks,
+            model_name,
+            executor,
+            strict_output=strict_output,
+            retries=effective_retries,
         )
         all_models_data.append(model_res)
 
@@ -450,6 +614,9 @@ def run_automated_testing(
             "summary": {
                 "total": primary_data["total"],
                 "passed": primary_data["passed"],
+                "passed_initial": primary_data.get("passed_initial", primary_data["passed"]),
+                "passed_on_retry": primary_data.get("passed_on_retry", 0),
+                "retries_configured": primary_data.get("retries_configured", effective_retries),
                 "failed": primary_data["failed"],
                 "pass_rate_pct": primary_data["pass_rate_pct"],
                 "model": primary_data["model"],
@@ -482,7 +649,7 @@ def run_automated_testing(
         print("MULTI-MODEL COMPARISON SUMMARY")
         print("===========================================================")
         for m in all_models_data:
-            print(f" - {m['model']:<16}: {m['passed']}/{m['total']} Passed ({m['pass_rate_pct']:.1f}%)")
+            print(f" - {m['model']:<16}: {m['passed']}/{m['total']} Passed ({m['pass_rate_pct']:.1f}%) [initial: {m.get('passed_initial', m['passed'])}, retry: {m.get('passed_on_retry', 0)}]")
         print(f"\nComparison Reports:")
         print(f" - JSON:     {comp_json_path}")
         print(f" - Markdown: {comp_md_path}")
@@ -544,6 +711,17 @@ if __name__ == "__main__":
             "must still match."
         ),
     )
+    parser.add_argument(
+        "--retries",
+        type=int,
+        default=3,
+        help="Number of auto-repair retries per task on failure (minimum 3 if enabled, default: 3).",
+    )
+    parser.add_argument(
+        "--no-retries",
+        action="store_true",
+        help="Disable automatic retries on task failure.",
+    )
     args = parser.parse_args()
 
     selected_models: List[str] = []
@@ -557,6 +735,8 @@ if __name__ == "__main__":
         # Default to all models when run without arguments
         selected_models = list(ALL_JESSE_MODELS)
 
+    retries_count = 0 if args.no_retries else max(3, args.retries)
+
     run_automated_testing(
         tasks_file=args.tasks_file,
         models=selected_models,
@@ -564,4 +744,5 @@ if __name__ == "__main__":
         language_filter=args.lang,
         force_language=args.force_lang,
         strict_output=args.strict_output,
+        retries=retries_count,
     )

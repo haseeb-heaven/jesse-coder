@@ -101,3 +101,29 @@ def test_switch_model_endpoint(client):
     res2 = client.post("/api/model", json={"model": "jesse-prod"})
     assert res2.status_code == 200
     assert res2.json()["model"] == "jesse-prod"
+
+
+def test_settings_endpoints(client):
+    """Test /api/settings GET and POST and mask behavior."""
+    res = client.get("/api/settings")
+    assert res.status_code == 200
+    data = res.json()
+    assert "has_api_key" in data
+    assert "api_key_masked" in data
+    assert "base_url" in data
+    assert "model" in data
+
+    # Update model via settings
+    update_res = client.post("/api/settings", json={"model": "jesse-prod"})
+    assert update_res.status_code == 200
+    assert update_res.json()["status"] == "ok"
+
+
+def test_settings_verify_endpoint(client):
+    """Test /api/settings/verify rejects invalid keys."""
+    res = client.post("/api/settings/verify", json={"api_key": "jesse_live_badkey999"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["valid"] is False
+    assert "error" in data
+

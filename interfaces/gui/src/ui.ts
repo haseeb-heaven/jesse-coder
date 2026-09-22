@@ -2,7 +2,7 @@
  * UI controller and DOM manipulation for JesseCoder WebApp.
  */
 
-import { ChatMessage, ExecutionResult, ExtractedCode } from './types';
+import { ChatMessage, ExecutionResult, ExtractedCode, ServerSettings } from './types';
 import { renderMarkdown, escapeHtml } from './markdown';
 
 export interface RawPayload {
@@ -57,6 +57,22 @@ export class UIController {
   private btnCloseRawEl: HTMLElement;
   private btnCopyRawEl: HTMLButtonElement;
 
+  // Settings modal elements
+  private settingsModalEl: HTMLElement;
+  private settingsApiKeyEl: HTMLInputElement;
+  private btnToggleApiKeyMaskEl: HTMLButtonElement;
+  private settingsBaseUrlEl: HTMLInputElement;
+  private settingsModelEl: HTMLSelectElement;
+  private settingsRetriesEl: HTMLSelectElement;
+  private btnVerifyKeyEl: HTMLButtonElement;
+  private settingsVerifyStatusEl: HTMLElement;
+  private settingsCurrentKeyDisplayEl: HTMLElement;
+  private settingsKeyBadgeEl: HTMLElement;
+  private btnSaveSettingsEl: HTMLButtonElement;
+  private btnCancelSettingsEl: HTMLButtonElement;
+  private btnCloseSettingsEl: HTMLButtonElement;
+  private btnSettingsEl: HTMLButtonElement;
+
   constructor() {
     this.dialogueEl         = document.getElementById('dialogue-stream') as HTMLElement;
     this.promptInputEl      = document.getElementById('prompt-input') as HTMLTextAreaElement;
@@ -97,6 +113,21 @@ export class UIController {
     this.rawModelInfoEl     = document.getElementById('raw-model-info') as HTMLElement;
     this.btnCloseRawEl      = document.getElementById('btn-close-raw') as HTMLButtonElement;
     this.btnCopyRawEl       = document.getElementById('btn-copy-raw') as HTMLButtonElement;
+
+    this.settingsModalEl            = document.getElementById('settings-modal') as HTMLElement;
+    this.settingsApiKeyEl           = document.getElementById('settings-api-key') as HTMLInputElement;
+    this.btnToggleApiKeyMaskEl      = document.getElementById('btn-toggle-api-key-mask') as HTMLButtonElement;
+    this.settingsBaseUrlEl          = document.getElementById('settings-base-url') as HTMLInputElement;
+    this.settingsModelEl            = document.getElementById('settings-model') as HTMLSelectElement;
+    this.settingsRetriesEl          = document.getElementById('settings-retries') as HTMLSelectElement;
+    this.btnVerifyKeyEl             = document.getElementById('btn-verify-key') as HTMLButtonElement;
+    this.settingsVerifyStatusEl     = document.getElementById('settings-verify-status') as HTMLElement;
+    this.settingsCurrentKeyDisplayEl= document.getElementById('settings-current-key-display') as HTMLElement;
+    this.settingsKeyBadgeEl         = document.getElementById('settings-key-badge') as HTMLElement;
+    this.btnSaveSettingsEl          = document.getElementById('btn-save-settings') as HTMLButtonElement;
+    this.btnCancelSettingsEl        = document.getElementById('btn-cancel-settings') as HTMLButtonElement;
+    this.btnCloseSettingsEl         = document.getElementById('btn-close-settings') as HTMLButtonElement;
+    this.btnSettingsEl              = document.getElementById('btn-settings') as HTMLButtonElement;
 
     this.initEventListeners();
     this.initTheme();
@@ -145,6 +176,22 @@ export class UIController {
     // Close raw modal on backdrop click
     this.rawModalEl.addEventListener('click', (e) => {
       if (e.target === this.rawModalEl) this.hideRawModal();
+    });
+
+    // Close settings modal
+    this.btnCloseSettingsEl?.addEventListener('click', () => {
+      this.hideSettingsModal();
+    });
+    this.btnCancelSettingsEl?.addEventListener('click', () => {
+      this.hideSettingsModal();
+    });
+    this.settingsModalEl?.addEventListener('click', (e) => {
+      if (e.target === this.settingsModalEl) this.hideSettingsModal();
+    });
+
+    // Toggle API key mask
+    this.btnToggleApiKeyMaskEl?.addEventListener('click', () => {
+      this.toggleApiKeyMask();
     });
 
     // Sync block-lang-override → header lang-select when user picks in workbench
@@ -814,5 +861,90 @@ export class UIController {
     }`;
     el.textContent = message;
     setTimeout(() => el.classList.add('hidden'), 4000);
+  }
+
+  // --------------------------------------------------------------------------
+  // Settings & Configuration Modal
+  // --------------------------------------------------------------------------
+
+  public showSettingsModal(): void {
+    this.settingsModalEl?.classList.remove('hidden');
+  }
+
+  public hideSettingsModal(): void {
+    this.settingsModalEl?.classList.add('hidden');
+  }
+
+  public populateSettings(settings: ServerSettings, currentRetries?: number): void {
+    if (this.settingsBaseUrlEl) {
+      this.settingsBaseUrlEl.value = settings.base_url || 'https://jesse.solidsf.com/api/v1';
+    }
+    if (this.settingsModelEl && settings.model) {
+      this.settingsModelEl.value = settings.model;
+    }
+    if (this.settingsRetriesEl && currentRetries !== undefined) {
+      this.settingsRetriesEl.value = String(currentRetries);
+    }
+    if (this.settingsApiKeyEl) {
+      this.settingsApiKeyEl.value = '';
+      this.settingsApiKeyEl.type = 'password';
+    }
+    if (this.btnToggleApiKeyMaskEl) {
+      this.btnToggleApiKeyMaskEl.textContent = '👁️ Show';
+    }
+    if (this.settingsCurrentKeyDisplayEl) {
+      this.settingsCurrentKeyDisplayEl.textContent = settings.has_api_key
+        ? (settings.api_key_masked || 'jesse_live_••••')
+        : 'No API key configured';
+    }
+    if (this.settingsKeyBadgeEl) {
+      if (settings.has_api_key) {
+        this.settingsKeyBadgeEl.textContent = 'Configured';
+        this.settingsKeyBadgeEl.className = 'px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 font-mono font-medium';
+      } else {
+        this.settingsKeyBadgeEl.textContent = 'Unset';
+        this.settingsKeyBadgeEl.className = 'px-1.5 py-0.5 rounded text-[10px] bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-mono font-medium';
+      }
+    }
+    this.setVerifyStatus('', 'idle');
+  }
+
+  public toggleApiKeyMask(): void {
+    if (!this.settingsApiKeyEl || !this.btnToggleApiKeyMaskEl) return;
+    const isMasked = this.settingsApiKeyEl.type === 'password';
+    this.settingsApiKeyEl.type = isMasked ? 'text' : 'password';
+    this.btnToggleApiKeyMaskEl.textContent = isMasked ? '🙈 Hide' : '👁️ Show';
+  }
+
+  public getSettingsFormValues(): { apiKey: string; baseUrl: string; model: string; retries: number } {
+    const apiKey = this.settingsApiKeyEl?.value.trim() || '';
+    const baseUrl = this.settingsBaseUrlEl?.value.trim() || '';
+    const model = this.settingsModelEl?.value || 'jesse-prod';
+    const retries = parseInt(this.settingsRetriesEl?.value || '3', 10) || 3;
+    return { apiKey, baseUrl, model, retries };
+  }
+
+  public setVerifyStatus(message: string, state: 'loading' | 'success' | 'error' | 'idle'): void {
+    if (!this.settingsVerifyStatusEl) return;
+    this.settingsVerifyStatusEl.textContent = message;
+    if (state === 'loading') {
+      this.settingsVerifyStatusEl.className = 'text-[10px] font-mono text-amber-500 animate-pulse';
+    } else if (state === 'success') {
+      this.settingsVerifyStatusEl.className = 'text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold';
+    } else if (state === 'error') {
+      this.settingsVerifyStatusEl.className = 'text-[10px] font-mono text-rose-600 dark:text-rose-400 font-bold';
+    } else {
+      this.settingsVerifyStatusEl.className = 'text-[10px] font-mono text-slate-500';
+    }
+  }
+
+  public setRetries(retries: number): void {
+    const val = String(retries);
+    if (this.retriesSelectEl) {
+      this.retriesSelectEl.value = val;
+    }
+    if (this.settingsRetriesEl) {
+      this.settingsRetriesEl.value = val;
+    }
   }
 }

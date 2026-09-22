@@ -144,3 +144,29 @@ export interface DocumentQueryResponse {
   data: unknown;
   detail?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Settings & Configuration
+// ---------------------------------------------------------------------------
+
+export interface ServerSettings {
+  has_api_key: boolean;
+  api_key_masked: string;
+  base_url: string;
+  model: string;
+  is_vercel: boolean;
+  saved_to_env?: boolean;
+}
+
+export interface SettingsUpdateRequest {
+  api_key?: string;
+  base_url?: string;
+  model?: string;
+}
+
+export interface VerifyConnectionResponse {
+  valid: boolean;
+  models?: string[];
+  error?: string;
+}
+

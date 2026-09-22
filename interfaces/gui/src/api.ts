@@ -12,14 +12,49 @@ import {
   MemoryResponse,
   DocumentListResponse,
   DocumentQueryResponse,
+  ServerSettings,
+  SettingsUpdateRequest,
+  VerifyConnectionResponse,
   StreamDoneEvent,
   StreamEvent,
 } from './types';
 
 const API_BASE = window.location.origin;
+const LOCAL_STORAGE_KEY_API_KEY = 'jesse_api_key_override';
+
+export function getStoredApiKey(): string {
+  try {
+    return localStorage.getItem(LOCAL_STORAGE_KEY_API_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setStoredApiKey(key: string): void {
+  try {
+    if (key && key.trim()) {
+      localStorage.setItem(LOCAL_STORAGE_KEY_API_KEY, key.trim());
+    } else {
+      localStorage.removeItem(LOCAL_STORAGE_KEY_API_KEY);
+    }
+  } catch {}
+}
+
+export function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  const key = getStoredApiKey();
+  if (key) {
+    headers['X-Jesse-Api-Key'] = key;
+  }
+  return headers;
+}
 
 export async function fetchHealth(): Promise<HealthStatus> {
-  const resp = await fetch(`${API_BASE}/api/health`);
+  const resp = await fetch(`${API_BASE}/api/health`, {
+    headers: getAuthHeaders(),
+  });
   if (!resp.ok) {
     throw new Error(`Health check failed: ${resp.statusText}`);
   }
@@ -27,7 +62,10 @@ export async function fetchHealth(): Promise<HealthStatus> {
 }
 
 export async function resetConversation(): Promise<void> {
-  const resp = await fetch(`${API_BASE}/api/reset`, { method: 'POST' });
+  const resp = await fetch(`${API_BASE}/api/reset`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
   if (!resp.ok) {
     throw new Error(`Reset failed: ${resp.statusText}`);
   }
@@ -36,7 +74,7 @@ export async function resetConversation(): Promise<void> {
 export async function switchModel(model: string): Promise<string> {
   const resp = await fetch(`${API_BASE}/api/model`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ model }),
   });
   if (!resp.ok) {
@@ -46,6 +84,43 @@ export async function switchModel(model: string): Promise<string> {
   return data.model;
 }
 
+export async function getSettings(): Promise<ServerSettings> {
+  const resp = await fetch(`${API_BASE}/api/settings`, {
+    headers: getAuthHeaders(),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to load settings: ${resp.statusText}`);
+  }
+  return resp.json();
+}
+
+export async function updateSettings(req: SettingsUpdateRequest): Promise<ServerSettings> {
+  if (req.api_key && req.api_key.trim()) {
+    setStoredApiKey(req.api_key.trim());
+  }
+  const resp = await fetch(`${API_BASE}/api/settings`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(req),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to save settings: ${resp.statusText}`);
+  }
+  return resp.json();
+}
+
+export async function verifySettings(apiKey?: string, baseUrl?: string): Promise<VerifyConnectionResponse> {
+  const resp = await fetch(`${API_BASE}/api/settings/verify`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ api_key: apiKey, base_url: baseUrl }),
+  });
+  if (!resp.ok) {
+    throw new Error(`Verification request failed: ${resp.statusText}`);
+  }
+  return resp.json();
+}
+
 export async function executeCode(
   code: string,
   language: string = 'python',
@@ -53,7 +128,7 @@ export async function executeCode(
 ): Promise<ExecutionResult> {
   const resp = await fetch(`${API_BASE}/api/execute`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ code, language, timeout }),
   });
 
@@ -71,7 +146,9 @@ export interface RawApiPayload {
 }
 
 export async function getRawResponse(): Promise<RawApiPayload> {
-  const resp = await fetch(`${API_BASE}/api/raw`);
+  const resp = await fetch(`${API_BASE}/api/raw`, {
+    headers: getAuthHeaders(),
+  });
   if (!resp.ok) {
     return { raw: '', was_canned: false };
   }
@@ -97,7 +174,7 @@ export async function submitFeedback(
   if (correction && correction.trim()) body.correction = correction.trim();
   const resp = await fetch(`${API_BASE}/api/feedback`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(body),
   });
   // Feedback always returns gracefully (degraded if API doesn't support it)
@@ -109,12 +186,17 @@ export async function submitFeedback(
 // ---------------------------------------------------------------------------
 
 export async function getMemory(): Promise<MemoryResponse> {
-  const resp = await fetch(`${API_BASE}/api/memory`);
+  const resp = await fetch(`${API_BASE}/api/memory`, {
+    headers: getAuthHeaders(),
+  });
   return resp.json();
 }
 
 export async function deleteMemory(): Promise<MemoryResponse> {
-  const resp = await fetch(`${API_BASE}/api/memory`, { method: 'DELETE' });
+  const resp = await fetch(`${API_BASE}/api/memory`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
   return resp.json();
 }
 
@@ -129,14 +211,16 @@ export async function storeDocument(
 ): Promise<DocumentListResponse> {
   const resp = await fetch(`${API_BASE}/api/documents`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ title, content, metadata }),
   });
   return resp.json();
 }
 
 export async function listDocuments(): Promise<DocumentListResponse> {
-  const resp = await fetch(`${API_BASE}/api/documents`);
+  const resp = await fetch(`${API_BASE}/api/documents`, {
+    headers: getAuthHeaders(),
+  });
   return resp.json();
 }
 
@@ -146,7 +230,7 @@ export async function queryDocuments(
 ): Promise<DocumentQueryResponse> {
   const resp = await fetch(`${API_BASE}/api/documents/query`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ query, top_k: topK }),
   });
   return resp.json();
@@ -168,7 +252,7 @@ export async function streamChat(
   try {
     const response = await fetch(`${API_BASE}/api/chat/stream`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ prompt, model }),
     });
 

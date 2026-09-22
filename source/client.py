@@ -221,6 +221,28 @@ class JesseClient:
     # Jesse REST API helpers (non-chat endpoints)
     # ------------------------------------------------------------------
 
+    def get_models(self) -> List[str]:
+        """GET /models — List available models for this API key."""
+        try:
+            resp = self._http.get("/models")
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, list):
+                    return [m.get("id", str(m)) if isinstance(m, dict) else str(m) for m in data]
+                elif isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
+                    return [m.get("id", str(m)) if isinstance(m, dict) else str(m) for m in data["data"]]
+                elif isinstance(data, dict) and "models" in data and isinstance(data["models"], list):
+                    return [m.get("id", str(m)) if isinstance(m, dict) else str(m) for m in data["models"]]
+                return [self.config.model]
+        except Exception:
+            pass
+
+        try:
+            models_page = self._client.models.list()
+            return [m.id for m in models_page.data]
+        except Exception as err:
+            raise self._map_openai_error(err)
+
     def submit_feedback(
         self,
         message_id: str,

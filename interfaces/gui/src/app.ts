@@ -6,7 +6,7 @@
 
 import { UIController } from './ui';
 import * as api from './api';
-import { ExecutionResult, StreamDoneEvent } from './types';
+import { ExecutionResult, StreamDoneEvent, SettingsUpdateRequest } from './types';
 
 class JesseCoderApp {
   private ui: UIController;
@@ -193,6 +193,20 @@ class JesseCoderApp {
     const docQueryInput = document.getElementById('doc-query-input') as HTMLInputElement;
     docQueryInput?.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter') this.handleDocSearch();
+    });
+
+    // ── Settings modal ────────────────────────────────────────────────────────
+    const btnSettings = document.getElementById('btn-settings');
+    btnSettings?.addEventListener('click', async () => {
+      await this.openSettings();
+    });
+
+    document.getElementById('btn-save-settings')?.addEventListener('click', async () => {
+      await this.handleSaveSettings();
+    });
+
+    document.getElementById('btn-verify-key')?.addEventListener('click', async () => {
+      await this.handleVerifyKey();
     });
   }
 
@@ -572,6 +586,83 @@ ${diagnostic}
       }
     } catch (err: any) {
       this.ui.showToast(`Feedback failed: ${err.message}`, true);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Settings & Configuration helpers
+  // --------------------------------------------------------------------------
+
+  private async openSettings(): Promise<void> {
+    try {
+      const settings = await api.getSettings();
+      this.ui.populateSettings(settings, this.ui.getMaxRetries());
+      this.ui.showSettingsModal();
+    } catch (err: any) {
+      this.ui.showToast(`Failed to load settings: ${err.message}`, true);
+    }
+  }
+
+  private async handleVerifyKey(): Promise<void> {
+    const form = this.ui.getSettingsFormValues();
+    const endpointLabel = form.baseUrl || 'configured endpoint';
+    this.ui.setVerifyStatus(`Connecting to ${endpointLabel}...`, 'loading');
+
+    try {
+      const result = await api.verifySettings(form.apiKey || undefined, form.baseUrl || undefined);
+      if (result.valid) {
+        const modelsCount = result.models ? result.models.length : 0;
+        this.ui.setVerifyStatus(`✅ Valid (${modelsCount} models accessible)`, 'success');
+      } else {
+        this.ui.setVerifyStatus(`❌ Invalid: ${result.error || 'Connection failed'}`, 'error');
+      }
+    } catch (err: any) {
+      this.ui.setVerifyStatus(`❌ Error: ${err.message}`, 'error');
+    }
+  }
+
+  private async handleSaveSettings(): Promise<void> {
+    const form = this.ui.getSettingsFormValues();
+    const saveBtn = document.getElementById('btn-save-settings') as HTMLButtonElement;
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span>Saving...</span>';
+    }
+
+    try {
+      const updateReq: SettingsUpdateRequest = {
+        api_key: form.apiKey || undefined,
+        base_url: form.baseUrl || undefined,
+        model: form.model || undefined,
+      };
+
+      const updated = await api.updateSettings(updateReq);
+
+      if (form.retries) {
+        this.ui.setRetries(form.retries);
+      }
+      if (form.model) {
+        this.ui.setSelectedModel(form.model);
+      }
+
+      this.ui.hideSettingsModal();
+
+      if (updated.is_vercel) {
+        this.ui.showToast('✅ Settings saved! (Stored in browser session for Vercel)');
+      } else if (updated.saved_to_env) {
+        this.ui.showToast('✅ Settings saved to .env & active session!');
+      } else {
+        this.ui.showToast('✅ Settings updated for active session!');
+      }
+
+      await this.checkBackendHealth();
+    } catch (err: any) {
+      this.ui.showToast(`Failed to save settings: ${err.message}`, true);
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<span>💾 Save Settings</span>';
+      }
     }
   }
 }

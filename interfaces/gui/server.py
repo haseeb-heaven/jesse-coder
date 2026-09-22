@@ -29,12 +29,14 @@ for _p in (str(_SOURCE_DIR), str(GUI_DIR), str(_ROOT_DIR)):
 
 try:
     from bot import JesseCodingBot
+    from client import JesseClient
     from config import JesseConfig
     from exceptions import JesseBotError
     from executor import CodeExecutor, ExecutionResult
     from code_extractor import ExtractedCodeBlock, get_primary_code_block
 except ImportError:
     from jesse_coder.bot import JesseCodingBot
+    from jesse_coder.client import JesseClient
     from jesse_coder.config import JesseConfig
     from jesse_coder.exceptions import JesseBotError
     from jesse_coder.executor import CodeExecutor, ExecutionResult
@@ -47,13 +49,90 @@ logging.basicConfig(level=logging.INFO)
 bot: Optional[JesseCodingBot] = None
 
 
-def get_bot() -> JesseCodingBot:
-    """Lazy initialize and retrieve singleton bot instance."""
+def extract_request_api_key(request: Request) -> Optional[str]:
+    """Extract API key from custom header or Bearer authorization."""
+    key = request.headers.get("x-jesse-api-key")
+    if key and key.strip():
+        return key.strip()
+    auth = request.headers.get("authorization")
+    if auth and auth.strip().lower().startswith("bearer "):
+        token = auth.strip()[7:].strip()
+        if token:
+            return token
+    return None
+
+
+def mask_api_key(key: str) -> str:
+    """Mask an API key for safe UI display (e.g. jesse_li••••••••3a2f)."""
+    if not key or key == "unconfigured":
+        return ""
+    if len(key) <= 8:
+        return "•" * len(key)
+    prefix = key[:8]
+    suffix = key[-4:] if len(key) >= 12 else key[-2:]
+    return f"{prefix}{'•' * 8}{suffix}"
+
+
+def is_vercel_env() -> bool:
+    """Return True if running inside Vercel serverless environment."""
+    return bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+
+
+def save_settings_to_env(
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    model: Optional[str] = None,
+) -> bool:
+    """Attempt to update or append settings in .env file if writable on disk."""
+    try:
+        env_path = _ROOT_DIR / ".env"
+        lines = []
+        if env_path.exists():
+            lines = env_path.read_text(encoding="utf-8").splitlines()
+
+        updates = {}
+        if api_key is not None:
+            updates["JESSE_API_KEY"] = api_key
+        if base_url is not None:
+            updates["JESSE_BASE_URL"] = base_url
+        if model is not None:
+            updates["JESSE_MODEL"] = model
+
+        new_lines = []
+        found_keys = set()
+        for line in lines:
+            line_str = line.strip()
+            if "=" in line_str and not line_str.startswith("#"):
+                k, _ = line_str.split("=", 1)
+                k = k.strip()
+                if k in updates:
+                    new_lines.append(f"{k}={updates[k]}")
+                    found_keys.add(k)
+                    continue
+            new_lines.append(line)
+
+        for k, v in updates.items():
+            if k not in found_keys:
+                new_lines.append(f"{k}={v}")
+
+        env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        return True
+    except Exception as exc:
+        logger.warning("Could not persist settings to .env: %s", exc)
+        return False
+
+
+def get_bot(api_key_override: Optional[str] = None) -> JesseCodingBot:
+    """Lazy initialize and retrieve singleton bot instance with optional key override."""
     global bot
     if bot is None:
         cfg = JesseConfig()
-        cfg.validate()
+        if not cfg.api_key:
+            cfg.api_key = "unconfigured"
         bot = JesseCodingBot(config=cfg)
+    if api_key_override and api_key_override.strip() and bot.config.api_key != api_key_override:
+        bot.config.api_key = api_key_override
+        bot.client = JesseClient(config=bot.config)
     return bot
 
 
@@ -90,18 +169,120 @@ class ModelSwitchRequest(BaseModel):
     model: str = Field(..., description="Target model identifier (jesse-prod, jesse-pristine, jesse)")
 
 
+class SettingsRequest(BaseModel):
+    api_key: Optional[str] = Field(None, description="Jesse API Key")
+    base_url: Optional[str] = Field(None, description="Jesse API Base URL")
+    model: Optional[str] = Field(None, description="Default model identifier")
+
+
+class VerifyRequest(BaseModel):
+    api_key: Optional[str] = Field(None, description="API key to verify")
+    base_url: Optional[str] = Field(None, description="Base URL to verify against")
+
+
 @app.get("/api/health")
-async def health_check() -> Dict[str, Any]:
-    """Health check endpoint with current bot state."""
-    active_bot = get_bot()
+async def health_check(request: Request) -> Dict[str, Any]:
+    """Health check endpoint with current bot state and configuration."""
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
+    current_key = active_bot.config.api_key
+    has_key = bool(current_key and current_key != "unconfigured")
     return {
         "status": "online",
         "model": active_bot.config.model,
         "base_url": active_bot.config.base_url,
+        "has_api_key": has_key,
+        "api_key_masked": mask_api_key(current_key) if has_key else "",
+        "is_vercel": is_vercel_env(),
         "history_count": len(active_bot.get_history()),
         "has_last_code": active_bot.last_extracted_code is not None,
         "has_last_execution": active_bot.last_execution_result is not None,
     }
+
+
+@app.get("/api/settings")
+async def get_settings(request: Request) -> Dict[str, Any]:
+    """Retrieve current system settings with masked API key."""
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
+    current_key = active_bot.config.api_key
+    has_key = bool(current_key and current_key != "unconfigured")
+    return {
+        "has_api_key": has_key,
+        "api_key_masked": mask_api_key(current_key) if has_key else "",
+        "base_url": active_bot.config.base_url,
+        "model": active_bot.config.model,
+        "is_vercel": is_vercel_env(),
+    }
+
+
+@app.post("/api/settings")
+async def update_settings(req: SettingsRequest, request: Request) -> Dict[str, Any]:
+    """Update system settings, persist to environment and .env if writable."""
+    active_bot = get_bot()
+
+    if req.api_key is not None and req.api_key.strip():
+        new_key = req.api_key.strip()
+        active_bot.config.api_key = new_key
+        os.environ["JESSE_API_KEY"] = new_key
+        active_bot.client = JesseClient(config=active_bot.config)
+        logger.info("Updated API key via Settings endpoint")
+
+    if req.base_url is not None and req.base_url.strip():
+        new_url = req.base_url.strip().rstrip("/")
+        active_bot.config.base_url = new_url
+        os.environ["JESSE_BASE_URL"] = new_url
+        active_bot.client = JesseClient(config=active_bot.config)
+        logger.info("Updated Base URL to %s", new_url)
+
+    if req.model is not None and req.model.strip():
+        new_model = req.model.strip()
+        active_bot.config.model = new_model
+        os.environ["JESSE_MODEL"] = new_model
+        logger.info("Updated default model to %s", new_model)
+
+    saved_to_env = save_settings_to_env(
+        api_key=req.api_key.strip() if req.api_key else None,
+        base_url=req.base_url.strip() if req.base_url else None,
+        model=req.model.strip() if req.model else None,
+    )
+
+    current_key = active_bot.config.api_key
+    has_key = bool(current_key and current_key != "unconfigured")
+    return {
+        "status": "ok",
+        "has_api_key": has_key,
+        "api_key_masked": mask_api_key(current_key) if has_key else "",
+        "base_url": active_bot.config.base_url,
+        "model": active_bot.config.model,
+        "saved_to_env": saved_to_env,
+        "is_vercel": is_vercel_env(),
+    }
+
+
+@app.post("/api/settings/verify")
+async def verify_settings(req: VerifyRequest, request: Request) -> Dict[str, Any]:
+    """Verify API credentials against Jesse API by checking auth and querying model list."""
+    key_to_test = req.api_key.strip() if req.api_key else None
+    if not key_to_test:
+        header_key = extract_request_api_key(request)
+        active_bot = get_bot(api_key_override=header_key)
+        key_to_test = active_bot.config.api_key
+
+    if not key_to_test or key_to_test == "unconfigured":
+        return {"valid": False, "error": "No API key provided or configured."}
+
+    base_url = req.base_url.strip() if req.base_url else get_bot().config.base_url
+    try:
+        test_cfg = JesseConfig(api_key=key_to_test, base_url=base_url)
+        test_client = JesseClient(config=test_cfg)
+        # 1. Verify key authenticity with Jesse auth endpoint
+        test_client.get_memory()
+        # 2. Retrieve accessible models
+        models = test_client.get_models()
+        return {"valid": True, "models": models}
+    except Exception as exc:
+        return {"valid": False, "error": str(exc)}
 
 
 @app.post("/api/model")
@@ -114,7 +295,7 @@ async def switch_model(req: ModelSwitchRequest) -> Dict[str, Any]:
 
 
 @app.post("/api/chat/stream")
-async def chat_stream(req: ChatRequest) -> StreamingResponse:
+async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
     """
     Stream Jesse API response token-by-token via Server-Sent Events (SSE).
     Followed by a 'done' event with extracted code and raw API payload.
@@ -122,7 +303,14 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
     if not req.prompt or not req.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
 
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
+
+    if not active_bot.config.api_key or active_bot.config.api_key == "unconfigured":
+        raise HTTPException(
+            status_code=401,
+            detail="Jesse API key is not configured. Please open Settings (gear icon in the top right) and enter your API key.",
+        )
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
@@ -259,10 +447,11 @@ class DocumentQueryRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 @app.post("/api/feedback")
-async def submit_feedback(req: FeedbackRequest) -> Dict[str, Any]:
+async def submit_feedback(req: FeedbackRequest, request: Request) -> Dict[str, Any]:
     """Mark an answer right (thumbs_up) or wrong (thumbs_down), with an optional correction.
     This trains jesse-prod to improve over time."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     if req.rating not in ("thumbs_up", "thumbs_down"):
         raise HTTPException(status_code=400, detail="rating must be 'thumbs_up' or 'thumbs_down'")
     try:
@@ -285,9 +474,10 @@ async def submit_feedback(req: FeedbackRequest) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 @app.get("/api/memory")
-async def get_memory() -> Dict[str, Any]:
+async def get_memory(request: Request) -> Dict[str, Any]:
     """Retrieve all facts Jesse remembers for this API key."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     try:
         result = active_bot.client.get_memory()
         return {"status": "ok", "data": result}
@@ -297,9 +487,10 @@ async def get_memory() -> Dict[str, Any]:
 
 
 @app.delete("/api/memory")
-async def delete_memory() -> Dict[str, Any]:
+async def delete_memory(request: Request) -> Dict[str, Any]:
     """Erase everything Jesse remembers for this API key."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     try:
         result = active_bot.client.delete_memory()
         logger.info("Memory erased for API key")
@@ -314,9 +505,10 @@ async def delete_memory() -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 @app.post("/api/documents")
-async def store_document(req: DocumentStoreRequest) -> Dict[str, Any]:
+async def store_document(req: DocumentStoreRequest, request: Request) -> Dict[str, Any]:
     """Store a document so Jesse can retrieve it in future conversations."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     if not req.title.strip() or not req.content.strip():
         raise HTTPException(status_code=400, detail="title and content must not be empty")
     try:
@@ -333,9 +525,10 @@ async def store_document(req: DocumentStoreRequest) -> Dict[str, Any]:
 
 
 @app.get("/api/documents")
-async def list_documents() -> Dict[str, Any]:
+async def list_documents(request: Request) -> Dict[str, Any]:
     """List all stored documents for this API key."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     try:
         result = active_bot.client.list_documents()
         return {"status": "ok", "data": result}
@@ -345,9 +538,10 @@ async def list_documents() -> Dict[str, Any]:
 
 
 @app.post("/api/documents/query")
-async def query_documents(req: DocumentQueryRequest) -> Dict[str, Any]:
+async def query_documents(req: DocumentQueryRequest, request: Request) -> Dict[str, Any]:
     """Semantic search over stored documents."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="query must not be empty")
     try:
