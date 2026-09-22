@@ -1,0 +1,52 @@
+[
+  {
+    "id": "bug_01",
+    "language": "python",
+    "mode": "debug",
+    "difficulty": "simple",
+    "title": "Sum of Squares",
+    "task": "The program below must print the sum of the squares of all integers from 1 up to and including n, where n is read from stdin. It currently prints a wrong value.\n\nBuggy program:\n```python\nimport sys\n\ndef sum_of_squares(n):\n    total = 0\n    for i in range(1, n):\n        total += i * i\n    return total\n\ndef main():\n    n = int(sys.stdin.readline().strip())\n    print(sum_of_squares(n))\n\nif __name__ == '__main__':\n    main()\n```\n\nFind every bug and print the complete corrected program. The corrected program must read the same input from stdin and print the expected output, keeping the same functions and output format.",
+    "input": "5\n",
+    "expected_output": "55\n"
+  },
+  {
+    "id": "bug_02",
+    "language": "python",
+    "mode": "debug",
+    "difficulty": "simple",
+    "title": "Arithmetic Mean",
+    "task": "The program below must print the arithmetic mean of the integers read from stdin, formatted with two decimals. It currently prints a wrong value.\n\nBuggy program:\n```python\nimport sys\n\ndef average(numbers):\n    if not numbers:\n        return 0\n    total = 0\n    for value in numbers:\n        total += value\n    return total // len(numbers)\n\ndef main():\n    numbers = [int(token) for token in sys.stdin.read().split()]\n    print(f'{average(numbers):.2f}')\n\nif __name__ == '__main__':\n    main()\n```\n\nFind every bug and print the complete corrected program. The corrected program must read the same input from stdin and print the expected output, keeping the same functions and output format.",
+    "input": "1 1 2\n",
+    "expected_output": "1.33\n"
+  },
+  {
+    "id": "bug_03",
+    "language": "python",
+    "mode": "debug",
+    "difficulty": "medium",
+    "title": "Most Frequent Value",
+    "task": "The program below must print the value that occurs most often in the integers read from stdin. When several values are tied for the highest count, it must print the smallest of the tied values. It currently crashes instead of printing a result.\n\nBuggy program:\n```python\nimport sys\n\ndef most_frequent(values):\n    counts = {}\n    for value in values:\n        counts[value] = counts[value] + 1\n    best = None\n    for value in counts:\n        if best is None or counts[value] > counts[best]:\n            best = value\n    return best\n\ndef main():\n    values = [int(token) for token in sys.stdin.read().split()]\n    print(most_frequent(values))\n\nif __name__ == '__main__':\n    main()\n```\n\nFind every bug and print the complete corrected program. The corrected program must read the same input from stdin and print the expected output, keeping the same functions and output format.",
+    "input": "5 5 2 2 2 5\n",
+    "expected_output": "2\n"
+  },
+  {
+    "id": "bug_04",
+    "language": "python",
+    "mode": "debug",
+    "difficulty": "medium",
+    "title": "Running Totals",
+    "task": "The program below must print the running totals of each input line separately: one line of space-separated running totals per input line. The two input lines must be processed independently, but the second result currently includes values from the first.\n\nBuggy program:\n```python\nimport sys\n\ndef running_totals(values, totals=[]):\n    current = 0\n    for value in values:\n        current += value\n        totals.append(current)\n    return totals\n\ndef main():\n    lines = [line.strip() for line in sys.stdin if line.strip()]\n    first = [int(token) for token in lines[0].split()]\n    second = [int(token) for token in lines[1].split()]\n    print(' '.join(str(value) for value in running_totals(first)))\n    print(' '.join(str(value) for value in running_totals(second)))\n\nif __name__ == '__main__':\n    main()\n```\n\nFind every bug and print the complete corrected program. The corrected program must read the same input from stdin and print the expected output, keeping the same functions and output format.",
+    "input": "1 2 3\n10 20\n",
+    "expected_output": "1 3 6\n10 30\n"
+  },
+  {
+    "id": "bug_05",
+    "language": "python",
+    "mode": "debug",
+    "difficulty": "medium",
+    "title": "First Occurrence Index",
+    "task": "The program below must print the index of the FIRST occurrence of the target integer (second input line) in the space-separated list of integers on the first input line (treat the list as sorted ascending), or -1 when the target is absent. It currently fails: it does not parse the first line correctly and it does not return the first occurrence.\n\nBuggy program:\n```python\nimport sys\n\ndef parse_values(line):\n    return sorted(int(token) for token in line.split(','))\n\ndef first_index(sorted_values, target):\n    low = 0\n    high = len(sorted_values) - 1\n    result = -1\n    while low <= high:\n        mid = (low + high) // 2\n        if sorted_values[mid] == target:\n            result = mid\n            low = mid + 1\n        elif sorted_values[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return result\n\ndef main():\n    lines = [line.strip() for line in sys.stdin if line.strip()]\n    values = parse_values(lines[0])\n    target = int(lines[1])\n    print(first_index(values, target))\n\nif __name__ == '__main__':\n    main()\n```\n\nFind every bug and print the complete corrected program. The corrected program must read the same input from stdin and print the expected output, keeping the same functions and output format.",
+    "input": "1 2 2 2 5\n2\n",
+    "expected_output": "1\n"
+  }
+]

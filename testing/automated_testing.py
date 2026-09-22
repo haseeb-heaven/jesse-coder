@@ -80,6 +80,7 @@ def build_task_prompt(task: Dict[str, Any]) -> str:
     description = task["task"]
     sample_input = task["input"]
     expected_output = task["expected_output"]
+    debug_mode = str(task.get("mode", "")).lower() == "debug"
 
     lang_instructions = {
         "python": "Read from sys.stdin and print to sys.stdout.",
@@ -87,8 +88,25 @@ def build_task_prompt(task: Dict[str, Any]) -> str:
         "cpp": "Read from std::cin and write to std::cout.",
     }.get(lang.lower(), "Read from standard input and write to standard output.")
 
+    if debug_mode:
+        heading = (
+            f"Find and fix every bug in the following {lang} program. It currently produces "
+            f"wrong results, crashes, or behaves incorrectly:"
+        )
+        # The buggy program is quoted in the prompt, so forbid echoing it back: the
+        # extractor returns the first fenced block, which must be the fixed program.
+        extra_rule = (
+            "\nDo NOT quote, repeat, or explain the original buggy program - output only the "
+            "complete corrected program."
+        )
+    else:
+        heading = (
+            f"Implement a complete, standalone program in {lang} that solves the following task:"
+        )
+        extra_rule = ""
+
     return f"""\
-Implement a complete, standalone program in {lang} that solves the following task:
+{heading}
 
 Title: {title}
 Description: {description}
@@ -103,9 +121,29 @@ Expected Output:
 {expected_output}
 
 STRICT REQUIREMENT:
-Output ONLY the complete runnable program wrapped in ```{lang} ... ``` code block.
+Output ONLY the complete runnable program wrapped in ```{lang} ... ``` code block.{extra_rule}
 Do NOT output any markdown headers, conversational text, or explanations outside the code block.
 """
+
+
+# Language aliases accepted per task language. A code block is only executed when its
+# declared language is compatible with the task language.
+_LANGUAGE_ALIASES = {
+    "python": {"python", "py", "python3"},
+    "javascript": {"javascript", "js", "node", "typescript", "ts"},
+    "cpp": {"cpp", "c++", "cc", "cxx", "c"},
+}
+
+
+def language_matches(block_language: str, task_language: str) -> bool:
+    """True when a code block's declared language can be executed as the task language."""
+    block = (block_language or "").strip().lower()
+    task = (task_language or "").strip().lower()
+    if not block or not task:
+        return True  # untagged blocks default to the task language downstream
+    if block == task:
+        return True
+    return task in _LANGUAGE_ALIASES and block in _LANGUAGE_ALIASES[task]
 
 
 def evaluate_model_on_tasks(
@@ -150,7 +188,18 @@ def evaluate_model_on_tasks(
             query_time_ms = (time.perf_counter() - t_start) * 1000
 
             code_block = get_primary_code_block(model_response, preferred_lang=lang)
-            if code_block and code_block.code.strip():
+            if code_block and code_block.code.strip() and not language_matches(
+                code_block.language, lang
+            ):
+                # The extractor falls back to the largest block of any language, so a model
+                # answering in the wrong language must be reported, not executed as the
+                # task language (which would surface as a confusing SyntaxError).
+                extracted_code = code_block.code.strip()
+                exec_error = (
+                    f"Model returned a '{code_block.language}' code block instead of "
+                    f"'{lang}'; the code was not executed."
+                )
+            elif code_block and code_block.code.strip():
                 extracted_code = code_block.code.strip()
                 exec_res = executor.execute_code(
                     code=extracted_code,
