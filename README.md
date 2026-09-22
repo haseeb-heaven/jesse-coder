@@ -199,6 +199,10 @@ Navigate to `http://localhost:8080` in your browser. Features include:
 - Dynamic model picker switching between `jesse-prod`, `jesse-pristine`, and `jesse`.
 - Raw API payload inspector (`Ctrl+R`).
 
+**Web Console Interface:**
+
+![JesseCoder GUI Web Console](docs/images/gui_interface.png)
+
 ### 2. Command Line Interface (CLI)
 
 Launch the interactive terminal session:
