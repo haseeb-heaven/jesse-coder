@@ -256,6 +256,7 @@ def run_automated_testing(
     models: Optional[List[str]] = None,
     task_id_filter: Optional[str] = None,
     language_filter: Optional[str] = None,
+    force_language: Optional[str] = None,
 ) -> None:
     if tasks_file is None:
         tasks_file = Path(__file__).resolve().parent / "tasks.json"
@@ -264,6 +265,10 @@ def run_automated_testing(
 
     with open(tasks_file, "r", encoding="utf-8") as f:
         tasks = json.load(f)
+
+    if force_language:
+        for t in tasks:
+            t["language"] = force_language.lower()
 
     if language_filter:
         tasks = [t for t in tasks if t.get("language", "").lower() == language_filter.lower()]
@@ -282,7 +287,7 @@ def run_automated_testing(
 
     print(f"===========================================================")
     print(f"JesseCoder Automated Testing Suite")
-    print(f"Tasks: {len(tasks)} | Models: {', '.join(target_models)}")
+    print(f"Tasks File: {tasks_file.name} | Tasks: {len(tasks)} | Models: {', '.join(target_models)}")
     print(f"===========================================================")
 
     all_models_data: List[Dict[str, Any]] = []
@@ -292,10 +297,15 @@ def run_automated_testing(
         all_models_data.append(model_res)
 
     output_dir = Path(__file__).resolve().parent
+    file_stem = tasks_file.stem
+    report_json_name = f"{file_stem}_report.json" if file_stem != "tasks" else "task_eval_report.json"
+    report_md_name = f"{file_stem.upper()}_REPORT.md" if file_stem != "tasks" else "TASK_EVAL_REPORT.md"
+    comp_json_name = f"{file_stem}_comparison_report.json" if file_stem != "tasks" else "model_comparison_report.json"
+    comp_md_name = f"{file_stem.upper()}_COMPARISON_REPORT.md" if file_stem != "tasks" else "MODEL_COMPARISON_REPORT.md"
 
     # Save primary model report
     primary_data = all_models_data[0]
-    primary_json_path = output_dir / "task_eval_report.json"
+    primary_json_path = output_dir / report_json_name
     with open(primary_json_path, "w", encoding="utf-8") as f:
         json.dump({
             "summary": {
@@ -309,13 +319,13 @@ def run_automated_testing(
             "tasks": primary_data["tasks"],
         }, f, indent=2)
 
-    primary_md_path = output_dir / "TASK_EVAL_REPORT.md"
+    primary_md_path = output_dir / report_md_name
     with open(primary_md_path, "w", encoding="utf-8") as f:
         f.write(generate_markdown_report(primary_data))
 
     # If multiple models tested, save comparison reports
     if len(all_models_data) > 1:
-        comp_json_path = output_dir / "model_comparison_report.json"
+        comp_json_path = output_dir / comp_json_name
         with open(comp_json_path, "w", encoding="utf-8") as f:
             json.dump({
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -323,7 +333,7 @@ def run_automated_testing(
                 "models": all_models_data,
             }, f, indent=2)
 
-        comp_md_path = output_dir / "MODEL_COMPARISON_REPORT.md"
+        comp_md_path = output_dir / comp_md_name
         comp_md_content = generate_comparison_markdown(all_models_data, tasks)
         with open(comp_md_path, "w", encoding="utf-8") as f:
             f.write(comp_md_content)
@@ -379,6 +389,12 @@ if __name__ == "__main__":
         default=None,
         help="Filter tasks by programming language (e.g. python)",
     )
+    parser.add_argument(
+        "--force-lang",
+        type=str,
+        default=None,
+        help="Force all tasks to be implemented in a specific language (e.g. python)",
+    )
     args = parser.parse_args()
 
     selected_models: List[str] = []
@@ -397,4 +413,5 @@ if __name__ == "__main__":
         models=selected_models,
         task_id_filter=args.task,
         language_filter=args.lang,
+        force_language=args.force_lang,
     )
