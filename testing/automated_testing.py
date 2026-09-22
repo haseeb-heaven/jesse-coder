@@ -14,10 +14,12 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Ensure project root is on sys.path
+# Ensure source and project root are on sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_DIR = PROJECT_ROOT / "source"
+for p in (str(SOURCE_DIR), str(PROJECT_ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 from bot import JesseCodingBot
 from code_extractor import get_primary_code_block

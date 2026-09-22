@@ -9,6 +9,19 @@
 
 ---
 
+## 🧠 About Jesse: The Zero-Weight, Non-Neural Coding Engine
+
+> "Jesse V1 is a zero-weight, non-neural coding model. Instead of predicting tokens like GPT or Claude, it uses program structure, graph matching, Bayesian memory, and compiler feedback. The goal is faster, cheaper, deterministic code repair and generation. The interesting question is how well it scales to real-world software."
+
+Check Jesse built-in CAD software for [@solidSF](https://solidsf.com/).
+
+### 🌐 Official Platforms & Interactive Playground
+- **SolidSF Official CAD Platform**: [https://solidsf.com/](https://solidsf.com/) — Next-generation CAD powered by Jesse.
+- **Interactive Playground**: [https://jesse.my/#playground](https://jesse.my/#playground) — Try Jesse out live with an **Unlimited API per day**!
+- **API Endpoint**: `https://jesse.solidsf.com/api/v1`
+
+---
+
 ## 🌟 Key Capabilities
 
 - **General-Purpose Coding Agent**: Writes, debugs, and refactors code across any problem domain without synthetic mocks or hardcoded task solutions.
@@ -19,35 +32,49 @@
   - **Textual TUI**: Terminal-based user interface with side-by-side stream viewers and keyboard navigation.
   - **CLI Runner**: Interactive multi-turn terminal chat or single-shot command-line generation.
 - **Automated Testing & Multi-Model Evaluation**: Automated test suite executing benchmark problem sets with standard input (`stdin`) against `jesse-prod`, `jesse-pristine`, and `jesse`.
+- **Clean Root Architecture**: Zero coding files in root directory; strictly structured into `source/`, `scripts/`, `testing/`, `tests/`, and `web/`.
 - **Zero Secrets In Source**: Strictly environment-variable driven via `.env.example` with runtime key masking and no committed credentials.
 
 ---
 
 ## 📂 Project Architecture & Structure
 
+The repository follows a clean, professional architecture where the root folder strictly contains only markdown, documentation, and configuration files (**zero coding or script files in root**):
+
 ```
 jesse-coder/
-├── jesse_coder/                  # Core Python package
-│   ├── __init__.py               # Package exports & versioning
-│   ├── bot.py                    # Orchestrator & multi-turn agent logic
-│   ├── cli.py                    # Interactive CLI entrypoint
-│   ├── client.py                 # Jesse OpenAI-compatible API client
-│   ├── code_extractor.py         # Robust fenced code & tool action extractor
-│   ├── config.py                 # Dynamic configuration & environment loader
-│   ├── conversation.py           # Sliding-window context & message history
-│   ├── exceptions.py             # Domain-specific exception hierarchy
-│   ├── executor.py               # Process-isolated sandboxed code execution
-│   ├── tui.py                    # Textual terminal user interface
-│   └── web_server.py             # FastAPI backend with SSE streaming
-├── web/                          # Frontend WebApp assets
-│   ├── static/                   # Production HTML, CSS, and JS bundle
-│   │   ├── index.html
-│   │   ├── styles.css
-│   │   └── bundle.js
-│   ├── src/                      # TypeScript source files
-│   │   └── app.ts
-│   ├── package.json              # WebApp build configuration
-│   └── build.js                  # Frontend bundle script
+├── source/                       # All Python application & package source code
+│   ├── jesse_coder/              # Modular library package
+│   │   ├── __init__.py           # Package exports & versioning
+│   │   ├── bot.py                # Orchestrator & multi-turn agent logic
+│   │   ├── cli.py                # Interactive CLI entrypoint
+│   │   ├── client.py             # Jesse OpenAI-compatible API client
+│   │   ├── code_extractor.py     # Robust fenced code & tool action extractor
+│   │   ├── config.py             # Dynamic configuration & environment loader
+│   │   ├── conversation.py       # Sliding-window context & message history
+│   │   ├── exceptions.py         # Domain-specific exception hierarchy
+│   │   ├── executor.py           # Process-isolated sandboxed code execution
+│   │   ├── tui.py                # Textual terminal user interface
+│   │   └── web_server.py         # FastAPI backend with SSE streaming
+│   ├── bot.py                    # Module aliases & standalone exports
+│   ├── cli.py
+│   ├── client.py
+│   ├── code_extractor.py
+│   ├── config.py
+│   ├── conversation.py
+│   ├── exceptions.py
+│   ├── executor.py
+│   ├── main.py                   # CLI entrypoint runner
+│   ├── run_tests.py
+│   ├── synthesizer.py
+│   ├── tui.py
+│   ├── tui_app.py                # Textual TUI launcher
+│   ├── web_app.py                # WebApp server launcher
+│   └── web_server.py
+├── scripts/                      # Shell automation scripts (NO scripts in root)
+│   ├── run.sh                    # Interactive CLI & TUI launcher
+│   ├── run_web.sh                # WebApp server launcher
+│   └── build_frontend.sh         # Frontend asset bundler
 ├── testing/                      # Automated benchmark & evaluation suite
 │   ├── automated_testing.py      # Multi-model test runner with stdin streaming
 │   ├── tasks.json                # Standard 10 algorithmic benchmark tasks
@@ -64,15 +91,22 @@ jesse-coder/
 │   ├── test_live.py              # End-to-end live API integration tests
 │   ├── test_tui.py               # Terminal UI widget tests
 │   └── test_web_server.py        # FastAPI endpoint integration tests
+├── web/                          # Frontend WebApp assets
+│   ├── static/                   # Production HTML, CSS, and JS bundle
+│   │   ├── index.html
+│   │   ├── styles.css
+│   │   └── bundle.js
+│   ├── src/                      # TypeScript source files
+│   │   └── app.ts
+│   ├── package.json              # WebApp build configuration
+│   └── build.js                  # Frontend bundle script
 ├── .env.example                  # Template configuration without secrets
-├── .gitignore                    # Comprehensive Git ignore rules
+├── .gitignore                    # Comprehensive Git ignore rules (cache, env, keys)
+├── LICENSE                       # MIT License
 ├── pyproject.toml                # Modern Python packaging configuration
-├── requirements.txt              # Production dependency specifications
-├── pytest.ini                    # Pytest configuration
-├── main.py                       # Root CLI launcher
-├── web_app.py                    # WebApp server launcher
-├── run.sh                        # Convenience shell launcher
-└── run_web.sh                    # WebApp convenience script
+├── pytest.ini                    # Pytest configuration (pythonpath configured for source/)
+├── README.md                     # Documentation
+└── requirements.txt              # Production dependency specifications
 ```
 
 ---
@@ -119,9 +153,9 @@ JESSE_TIMEOUT=60.0
 Launch the interactive web application:
 
 ```bash
-./run_web.sh
+./scripts/run_web.sh
 # OR
-python3 web_app.py --port 8080
+python3 source/web_app.py --port 8080
 ```
 
 Navigate to `http://localhost:8080` in your browser. Features include:
@@ -135,15 +169,15 @@ Navigate to `http://localhost:8080` in your browser. Features include:
 Launch the interactive terminal session:
 
 ```bash
-python3 main.py
+./scripts/run.sh
 # OR
-./run.sh
+python3 source/main.py
 ```
 
 Execute a single-shot prompt directly with auto-execution:
 
 ```bash
-python3 main.py --prompt "Write a Python script to compute the 10th Fibonacci number" --exec
+python3 source/main.py --prompt "Write a Python script to compute the 10th Fibonacci number" --exec
 ```
 
 Available interactive commands in CLI:
@@ -159,9 +193,9 @@ Available interactive commands in CLI:
 Launch the full-screen terminal interface built with Textual:
 
 ```bash
-./run.sh tui
+./scripts/run.sh tui
 # OR
-python3 tui_app.py
+python3 source/tui_app.py
 ```
 
 ---

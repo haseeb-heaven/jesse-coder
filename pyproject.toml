@@ -33,15 +33,19 @@ dependencies = [
     "rich>=13.7.0",
     "python-dotenv>=1.0.0",
     "httpx>=0.26.0",
+    "pyperclip>=1.8.0",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
 ]
 
 [project.scripts]
-jesse-coder = "cli:main"
+jesse-coder = "jesse_coder.cli:main"
 jesse-tui = "tui_app:main"
 jesse-web = "web_app:main"
 jesse-test = "testing.automated_testing:run_automated_testing"
+
+[tool.setuptools.packages.find]
+where = ["source"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

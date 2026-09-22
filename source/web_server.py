@@ -68,7 +68,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-STATIC_DIR = BASE_DIR / "web" / "static"
+PROJECT_ROOT = BASE_DIR.parent if (BASE_DIR.parent / "web").exists() else BASE_DIR
+STATIC_DIR = PROJECT_ROOT / "web" / "static"
 
 
 class ChatRequest(BaseModel):

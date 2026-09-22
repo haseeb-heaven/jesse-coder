@@ -17,9 +17,12 @@ from pathlib import Path
 
 try:
     from dotenv import load_dotenv
-    _ENV_PATH = Path(__file__).resolve().parent / ".env"
+    _ROOT_DIR = Path(__file__).resolve().parent.parent
+    _ENV_PATH = _ROOT_DIR / ".env"
     if _ENV_PATH.exists():
         load_dotenv(_ENV_PATH)
+    elif (Path(__file__).resolve().parent / ".env").exists():
+        load_dotenv(Path(__file__).resolve().parent / ".env")
     else:
         load_dotenv()
 except ImportError:

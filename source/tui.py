@@ -17,7 +17,10 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-import pyperclip
+try:
+    import pyperclip
+except ImportError:
+    pyperclip = None
 from textual import events, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -633,6 +636,10 @@ class JesseTUIApp(App[None]):
         code_to_copy = self.current_code.strip()
         if not code_to_copy:
             self.notify("No code to copy!", severity="warning")
+            return
+
+        if pyperclip is None:
+            self.notify("pyperclip not installed", severity="warning")
             return
 
         try:

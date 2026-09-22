@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
         "--api-key",
         type=str,
         default=None,
-        help=f"Jesse API Key (defaults to env JESSE_API_KEY or '{DEFAULT_API_KEY}')",
+        help="Jesse API Key (defaults to env JESSE_API_KEY)",
     )
     parser.add_argument(
         "--base-url",

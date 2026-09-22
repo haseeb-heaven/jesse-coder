@@ -14,10 +14,12 @@ import time
 import webbrowser
 from pathlib import Path
 
-# Add project root to path
-ROOT_DIR = Path(__file__).resolve().parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+# Add source directory and project root to path
+SRC_DIR = Path(__file__).resolve().parent
+ROOT_DIR = SRC_DIR.parent
+for p in (str(SRC_DIR), str(ROOT_DIR)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 import uvicorn
 
@@ -61,6 +63,7 @@ def main() -> None:
         port=args.port,
         reload=args.reload,
         log_level="info",
+        app_dir=str(SRC_DIR),
     )
 
 
