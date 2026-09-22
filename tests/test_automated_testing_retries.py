@@ -80,3 +80,49 @@ def test_evaluate_model_on_tasks_recovers_on_retry():
     assert task_res["passed_on_retry"] is True
     assert task_res["retries_used"] == 1
     assert mock_bot.ask.call_count == 2
+
+
+def test_resolve_selected_models_defaults_to_single_model():
+    from testing.automated_testing import build_argument_parser, resolve_selected_models
+
+    parser = build_argument_parser()
+
+    # When no model flags are provided, defaults to single model ('jesse-prod')
+    args = parser.parse_args(["--tasks-file", "testing/tasks_bug_fixing.json", "--task", "bug_01", "--retries", "4"])
+    models = resolve_selected_models(args)
+    assert models == ["jesse-prod"]
+
+    # When --all-models is provided, returns all 3 models
+    args_all = parser.parse_args(["--all-models"])
+    models_all = resolve_selected_models(args_all)
+    assert models_all == ["jesse-prod", "jesse-pristine", "jesse"]
+
+    # When --model is provided, returns that specific model
+    args_one = parser.parse_args(["--model", "jesse"])
+    models_one = resolve_selected_models(args_one)
+    assert models_one == ["jesse"]
+
+    # When --models is provided, returns the list
+    args_multi = parser.parse_args(["--models", "jesse-prod,jesse"])
+    models_multi = resolve_selected_models(args_multi)
+    assert models_multi == ["jesse-prod", "jesse"]
+
+
+def test_build_task_prompt_without_stdin():
+    from testing.automated_testing import build_task_prompt
+
+    task = {
+        "id": "bug_01",
+        "language": "python",
+        "mode": "fix_bugs",
+        "title": "Bank Transfer",
+        "task": "Fix transfer bug",
+        "input": "",
+        "expected_output": "OK 800 700\nREJECTED 800 700\n",
+    }
+    prompt = build_task_prompt(task)
+
+    assert "Bank Transfer" in prompt
+    assert "Expected Output:\nOK 800 700" in prompt
+    assert "sys.stdin" not in prompt
+    assert "Sample Input:" not in prompt

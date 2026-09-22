@@ -33,6 +33,10 @@ class ExtractedCodeBlock:
     def is_javascript(self) -> bool:
         return self.language.lower() in ("javascript", "js", "node", "typescript", "ts")
 
+    @property
+    def is_cpp(self) -> bool:
+        return self.language.lower() in ("cpp", "c++", "cc", "cxx", "c")
+
 
 # Regex to match markdown fenced code blocks: ```lang ... ```
 CODE_BLOCK_REGEX = re.compile(
@@ -116,7 +120,13 @@ def get_primary_code_block(
     if preferred_lang and blocks:
         pref = preferred_lang.lower()
         for b in blocks:
-            if b.language == pref or (pref in ("bash", "sh") and b.is_shell) or (pref in ("python", "py") and b.is_python):
+            if (
+                b.language == pref
+                or (pref in ("bash", "sh") and b.is_shell)
+                or (pref in ("python", "py", "python3") and b.is_python)
+                or (pref in ("javascript", "js", "node") and b.is_javascript)
+                or (pref in ("cpp", "c++", "cxx", "cc") and b.is_cpp)
+            ):
                 return b
 
     # 2. Prefer the largest Python block, then largest shell block, then largest of anything

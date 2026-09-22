@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -85,7 +86,7 @@ def build_task_prompt(task: Dict[str, Any]) -> str:
     lang = task["language"]
     title = task["title"]
     description = task["task"]
-    sample_input = task["input"]
+    sample_input = task.get("input", "")
     expected_output = task["expected_output"]
     task_mode = str(task.get("mode", TASK_MODE_GENERATE)).strip().lower()
     fix_mode = task_mode in (TASK_MODE_FIX_BUGS, *LEGACY_FIX_MODE_ALIASES)
@@ -113,22 +114,29 @@ def build_task_prompt(task: Dict[str, Any]) -> str:
         )
         extra_rule = ""
 
-    return f"""\
-{heading}
-
-Title: {title}
-Description: {description}
-
-Input/Output Requirements:
+    has_input = bool(sample_input and sample_input.strip())
+    if has_input:
+        io_section = f"""Input/Output Requirements:
 {lang_instructions}
 
 Sample Input:
 {sample_input}
 
 Expected Output:
-{expected_output}
+{expected_output}"""
+    else:
+        io_section = f"""Expected Output:
+{expected_output}"""
 
-STRICT REQUIREMENT:
+    return f"""\
+{heading}
+
+Title: {title}
+Description: {description}
+
+{io_section}
+
+Format Instructions:
 Output ONLY the complete runnable program wrapped in ```{lang} ... ``` code block.{extra_rule}
 Do NOT output any markdown headers, conversational text, or explanations outside the code block.
 """
@@ -168,7 +176,7 @@ def build_task_retry_prompt(
     """
     lang = task["language"]
     title = task["title"]
-    sample_input = task["input"]
+    sample_input = task.get("input", "")
     expected_output = task["expected_output"]
     norm_actual = normalize_output(actual_output)
     norm_expected = normalize_output(expected_output)
@@ -181,6 +189,14 @@ def build_task_retry_prompt(
 
     diagnostic_summary = "\n".join(diag_lines)
 
+    has_input = bool(sample_input and sample_input.strip())
+    input_section = f"Sample Input (stdin):\n{sample_input}\n\n" if has_input else ""
+    io_rule = (
+        "2. Ensure the code reads from standard input and prints the EXACT expected output to standard output."
+        if has_input
+        else "2. Ensure the code executes self-contained logic and prints the EXACT expected output to standard output."
+    )
+
     return f"""\
 [AUTOMATED RETRY {attempt} OF {max_retries} - SELF-HEALING AUTO-REPAIR]
 Your previous code for '{title}' ({lang}) did NOT satisfy requirements.
@@ -188,10 +204,7 @@ Your previous code for '{title}' ({lang}) did NOT satisfy requirements.
 Task Description:
 {task['task']}
 
-Sample Input (stdin):
-{sample_input}
-
-Expected Output (stdout):
+{input_section}Expected Output (stdout):
 {expected_output}
 
 Actual Output Produced:
@@ -205,9 +218,9 @@ Previous Code Attempt:
 {previous_code.strip() if previous_code else '# (no code extracted)'}
 ```
 
-REQUIREMENTS:
+Correction Instructions:
 1. Carefully diagnose the error and logical defect above.
-2. Ensure the code reads from standard input and prints the EXACT expected output to standard output.
+{io_rule}
 3. Output ONLY the complete runnable corrected program wrapped in ```{lang} ... ``` code block.
 4. Do NOT output any markdown headers, conversational text, or explanations outside the code block.
 """
@@ -659,7 +672,7 @@ def run_automated_testing(
     print(f" - Markdown: {primary_md_path}")
 
 
-if __name__ == "__main__":
+def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Automated Testing Suite for JesseCoder.")
     parser.add_argument(
         "--tasks-file",
@@ -671,7 +684,7 @@ if __name__ == "__main__":
         "--model",
         type=str,
         default=None,
-        help="Single model to test against (e.g. jesse-prod)",
+        help="Single model to test against (default: jesse-prod or JESSE_MODEL env)",
     )
     parser.add_argument(
         "--models",
@@ -722,19 +735,29 @@ if __name__ == "__main__":
         action="store_true",
         help="Disable automatic retries on task failure.",
     )
+    return parser
+
+
+def resolve_selected_models(args: argparse.Namespace) -> List[str]:
+    """
+    Resolves the models to evaluate based on CLI arguments.
+    Defaults to single model (jesse-prod or JESSE_MODEL env) unless
+    --all-models or --models is explicitly specified.
+    """
+    if getattr(args, "all_models", False):
+        return list(ALL_JESSE_MODELS)
+    if getattr(args, "models", None):
+        return [m.strip() for m in args.models.split(",") if m.strip()]
+    if getattr(args, "model", None):
+        return [args.model.strip()]
+    default_model = os.getenv("JESSE_MODEL", "jesse-prod").strip() or "jesse-prod"
+    return [default_model]
+
+
+if __name__ == "__main__":
+    parser = build_argument_parser()
     args = parser.parse_args()
-
-    selected_models: List[str] = []
-    if args.all_models:
-        selected_models = list(ALL_JESSE_MODELS)
-    elif args.models:
-        selected_models = [m.strip() for m in args.models.split(",") if m.strip()]
-    elif args.model:
-        selected_models = [args.model.strip()]
-    else:
-        # Default to all models when run without arguments
-        selected_models = list(ALL_JESSE_MODELS)
-
+    selected_models = resolve_selected_models(args)
     retries_count = 0 if args.no_retries else max(3, args.retries)
 
     run_automated_testing(
