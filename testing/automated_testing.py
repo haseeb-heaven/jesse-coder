@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -27,11 +28,50 @@ from executor import CodeExecutor
 
 ALL_JESSE_MODELS = ["jesse-prod", "jesse-pristine", "jesse"]
 
+# Human-readable grading modes recorded in the generated reports.
+OUTPUT_MATCHING_STRICT = "strict (exact one-to-one stdout match)"
+OUTPUT_MATCHING_TOLERANT = (
+    "tolerant (value labels & line breaks ignored; values and their order must match)"
+)
+
 
 def normalize_output(text: str) -> str:
     """Normalize output by stripping trailing whitespace per line and overall."""
     lines = [line.rstrip() for line in (text or "").strip().splitlines()]
     return "\n".join(lines)
+
+
+# Value-label prefixes are presentation only, so they are ignored when comparing
+# produced values. A label is a word (optionally indexed or numbered) followed by a
+# ":" / "=" / "->" / "=>" separator, e.g. "Node 0: ", "dist[3] = " or "Result -> ".
+_LABEL_PREFIX_RE = re.compile(
+    r"^\s*[A-Za-z_][A-Za-z_0-9]*\s*(?:\[[^\]\n]{0,12}\]|\d{0,6})?\s*(?::|=|->|=>)\s*"
+)
+
+
+def value_tokens(text: str) -> List[str]:
+    """Returns the ordered value tokens of an output, minus any label prefixes."""
+    tokens: List[str] = []
+    for line in (text or "").strip().splitlines():
+        cleaned = _LABEL_PREFIX_RE.sub("", line).strip()
+        tokens.extend(cleaned.split())
+    return tokens
+
+
+def outputs_equivalent(expected: str, actual: str, strict: bool = False) -> bool:
+    """
+    Compares expected program output against actual program output.
+
+    Tolerant mode (default): label prefixes and line breaks are ignored, but every
+    value and its order must still match exactly, so
+    "0 3 1 4 7" is equivalent to "Node 0: 0\nNode 1: 3\nNode 2: 1\nNode 3: 4\nNode 4: 7".
+
+    Strict mode: requires an exact one-to-one match of the normalized output.
+    """
+    if strict:
+        return normalize_output(expected) == normalize_output(actual)
+    expected_tokens = value_tokens(expected)
+    return bool(expected_tokens) and expected_tokens == value_tokens(actual)
 
 
 def build_task_prompt(task: Dict[str, Any]) -> str:
@@ -72,6 +112,7 @@ def evaluate_model_on_tasks(
     tasks: List[Dict[str, Any]],
     model_name: str,
     executor: CodeExecutor,
+    strict_output: bool = False,
 ) -> Dict[str, Any]:
     """
     Evaluates a list of tasks against a specific Jesse model one-by-one.
@@ -101,6 +142,7 @@ def evaluate_model_on_tasks(
         actual_output = ""
         exec_error = None
         passed = False
+        equivalent_only = False
         duration_ms = 0.0
 
         try:
@@ -122,7 +164,10 @@ def evaluate_model_on_tasks(
                 norm_actual = normalize_output(actual_output)
                 norm_expected = normalize_output(expected_output)
 
-                passed = exec_res.is_success and (norm_actual == norm_expected)
+                passed = exec_res.is_success and outputs_equivalent(
+                    expected_output, actual_output, strict=strict_output
+                )
+                equivalent_only = passed and norm_actual != norm_expected
                 if not exec_res.is_success:
                     exec_error = exec_res.error or exec_res.stderr or f"Exit code {exec_res.exit_code}"
                 elif not passed:
@@ -144,6 +189,7 @@ def evaluate_model_on_tasks(
             "title": title,
             "language": lang,
             "passed": passed,
+            "equivalent_only": equivalent_only,
             "duration_ms": duration_ms,
             "expected_output": expected_output,
             "actual_output": actual_output,
@@ -164,6 +210,7 @@ def evaluate_model_on_tasks(
         "passed": passed_count,
         "failed": total - passed_count,
         "pass_rate_pct": pass_rate,
+        "output_matching": OUTPUT_MATCHING_STRICT if strict_output else OUTPUT_MATCHING_TOLERANT,
         "tasks": results,
     }
 
@@ -179,6 +226,13 @@ def generate_markdown_report(report_data: Dict[str, Any]) -> str:
     md.append(f"- **Passed**: {summary['passed']}")
     md.append(f"- **Failed**: {summary['failed']}")
     md.append(f"- **Pass Rate**: {summary['pass_rate_pct']:.1f}%")
+    md.append(f"- **Output Matching**: {summary.get('output_matching', OUTPUT_MATCHING_TOLERANT)}")
+    equivalent_count = sum(1 for r in results if r.get("equivalent_only"))
+    if equivalent_count:
+        md.append(
+            f"- **Passed via Equivalent Output**: {equivalent_count} "
+            f"(values match in order; labels/line breaks differ)"
+        )
     md.append(f"- **Timestamp**: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
 
     md.append("## Summary Table\n")
@@ -186,7 +240,14 @@ def generate_markdown_report(report_data: Dict[str, Any]) -> str:
     md.append("| :--- | :--- | :--- | :---: | :---: | :--- |")
     for r in results:
         badge = "✅ PASS" if r["passed"] else "❌ FAIL"
-        notes = "Matches expected output" if r["passed"] else (r["error"] or "").splitlines()[0]
+        if r["passed"]:
+            notes = (
+                "Equivalent output (labels/format ignored)"
+                if r.get("equivalent_only")
+                else "Matches expected output"
+            )
+        else:
+            notes = (r["error"] or "").splitlines()[0]
         md.append(f"| `{r['id']}` | {r['title']} | `{r['language']}` | {badge} | {r['duration_ms']:.1f}ms | {notes} |")
 
     md.append("\n## Detailed Task Results\n")
@@ -200,6 +261,12 @@ def generate_markdown_report(report_data: Dict[str, Any]) -> str:
 
         md.append(f"#### Expected Output:\n```\n{r['expected_output']}\n```\n")
         md.append(f"#### Actual Output:\n```\n{r['actual_output'] or '(none)'}\n```\n")
+        if r.get("equivalent_only"):
+            md.append(
+                "#### Grading:\n```\n"
+                "Equivalent output - values match in the expected order; label prefixes "
+                "and line breaks were ignored (see Output Matching mode above).\n```\n"
+            )
         if r["error"]:
             md.append(f"#### Diagnostics:\n```\n{r['error']}\n```\n")
         md.append("---\n")
@@ -217,7 +284,13 @@ def generate_comparison_markdown(
     md.append("# JesseCoder Multi-Model Comparison Report\n")
     md.append(f"- **Generated**: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     md.append(f"- **Total Tasks**: {len(tasks)}")
-    md.append(f"- **Models Evaluated**: {', '.join(model_str_list)}\n")
+    md.append(f"- **Models Evaluated**: {', '.join(model_str_list)}")
+    if models_data:
+        md.append(
+            f"- **Output Matching**: "
+            f"{models_data[0].get('output_matching', OUTPUT_MATCHING_TOLERANT)}"
+        )
+    md.append("")
 
     md.append("## Overall Model Performance\n")
     md.append("| Model | Passed | Failed | Pass Rate | Avg Latency |")
@@ -259,6 +332,7 @@ def run_automated_testing(
     task_id_filter: Optional[str] = None,
     language_filter: Optional[str] = None,
     force_language: Optional[str] = None,
+    strict_output: bool = False,
 ) -> None:
     if tasks_file is None:
         tasks_file = Path(__file__).resolve().parent / "tasks.json"
@@ -290,12 +364,18 @@ def run_automated_testing(
     print(f"===========================================================")
     print(f"JesseCoder Automated Testing Suite")
     print(f"Tasks File: {tasks_file.name} | Tasks: {len(tasks)} | Models: {', '.join(target_models)}")
+    print(
+        f"Output Matching: "
+        f"{OUTPUT_MATCHING_STRICT if strict_output else OUTPUT_MATCHING_TOLERANT}"
+    )
     print(f"===========================================================")
 
     all_models_data: List[Dict[str, Any]] = []
 
     for model_name in target_models:
-        model_res = evaluate_model_on_tasks(tasks, model_name, executor)
+        model_res = evaluate_model_on_tasks(
+            tasks, model_name, executor, strict_output=strict_output
+        )
         all_models_data.append(model_res)
 
     output_dir = Path(__file__).resolve().parent
@@ -316,6 +396,7 @@ def run_automated_testing(
                 "failed": primary_data["failed"],
                 "pass_rate_pct": primary_data["pass_rate_pct"],
                 "model": primary_data["model"],
+                "output_matching": primary_data["output_matching"],
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             },
             "tasks": primary_data["tasks"],
@@ -397,6 +478,15 @@ if __name__ == "__main__":
         default=None,
         help="Force all tasks to be implemented in a specific language (e.g. python)",
     )
+    parser.add_argument(
+        "--strict-output",
+        action="store_true",
+        help=(
+            "Require an exact one-to-one stdout match. Default is tolerant matching: "
+            "value labels and line breaks are ignored while values and their order "
+            "must still match."
+        ),
+    )
     args = parser.parse_args()
 
     selected_models: List[str] = []
@@ -416,4 +506,5 @@ if __name__ == "__main__":
         task_id_filter=args.task,
         language_filter=args.lang,
         force_language=args.force_lang,
+        strict_output=args.strict_output,
     )

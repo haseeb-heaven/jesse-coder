@@ -37,3 +37,18 @@ python3 testing/automated_testing.py --all-models
 ```bash
 python3 testing/automated_testing.py --tasks-file testing/tasks_complex.json
 ```
+
+### Output Matching
+By default the harness grades output by **value equivalence**: value-label prefixes
+(such as `Node 0: `, `dist[3] = ` or `Result -> `) and line breaks are ignored, while
+every value and its order must still match exactly. So `0 3 1 4 7` and
+`Node 0: 0 / Node 1: 3 / Node 2: 1 / Node 3: 4 / Node 4: 7` are equivalent.
+
+Use `--strict-output` to require an exact one-to-one `stdout` match instead:
+
+```bash
+python3 testing/automated_testing.py --strict-output
+```
+
+Every generated report records the active matching mode, and passes accepted on
+equivalence are flagged in the summary table and per-task section.
