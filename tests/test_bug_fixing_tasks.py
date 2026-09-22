@@ -1,7 +1,7 @@
-"""Tests for the bug-fixing (debug mode) benchmark tasks.
+"""Tests for the bug-fixing task set (mode: fix_bugs).
 
-Every task in testing/tasks_bugs.json ships a small buggy program. These tests
-pin the invariant that makes the set meaningful: the buggy program must NOT
+Every task in testing/tasks_bug_fixing.json ships a small buggy program. These
+tests pin the invariant that makes the set meaningful: the buggy program must NOT
 already produce the task's expected output, otherwise returning the original
 code unchanged would score as a pass.
 """
@@ -13,11 +13,25 @@ import pytest
 
 from code_extractor import extract_code_blocks
 from executor import CodeExecutor
-from testing.automated_testing import outputs_equivalent
+from testing.automated_testing import (
+    TASK_MODE_FIX_BUGS,
+    TASK_MODE_GENERATE,
+    outputs_equivalent,
+)
 
-TASKS_FILE = Path(__file__).resolve().parent.parent / "testing" / "tasks_bugs.json"
+TESTING_DIR = Path(__file__).resolve().parent.parent / "testing"
+TASKS_FILE = TESTING_DIR / "tasks_bug_fixing.json"
+GENERATION_FILE = TESTING_DIR / "tasks_code_generation.json"
 TASKS = json.loads(TASKS_FILE.read_text(encoding="utf-8"))
 EXECUTOR = CodeExecutor()
+
+
+def test_task_type_files_use_expected_modes():
+    """The two task types are distinguished by the 'mode' field."""
+    generation = json.loads(GENERATION_FILE.read_text(encoding="utf-8"))
+    assert generation, "code generation task set is empty"
+    assert {task["mode"] for task in generation} == {TASK_MODE_GENERATE}
+    assert {task["mode"] for task in TASKS} == {TASK_MODE_FIX_BUGS}
 
 
 def test_bug_task_set_metadata():
@@ -25,7 +39,7 @@ def test_bug_task_set_metadata():
     ids = [task["id"] for task in TASKS]
     assert len(ids) == len(set(ids)), "task ids must be unique"
     for task in TASKS:
-        assert task["mode"] == "debug"
+        assert task["mode"] == TASK_MODE_FIX_BUGS
         assert task["language"] == "python"
         assert task["difficulty"] in ("simple", "medium")
         assert task["expected_output"].strip(), f"{task['id']}: missing expected output"

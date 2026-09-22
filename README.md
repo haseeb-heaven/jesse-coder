@@ -3,7 +3,7 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg)](https://fastapi.tiangolo.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests: Passing](https://img.shields.io/badge/tests-43%20passed-brightgreen.svg)](tests/)
+[![Tests: Passing](https://img.shields.io/badge/tests-63%20passing-brightgreen.svg)](tests/)
 
 **JesseCoder** is a general-purpose, production-grade AI coding assistant and execution workbench built on the Jesse API (OpenAI-compatible). It features real-time Server-Sent Events (SSE) token streaming, isolated subprocess code execution with rolling buffer truncation, a terminal UI (TUI), and an automated benchmarking & multi-model evaluation test harness.
 
@@ -122,7 +122,8 @@ jesse-coder/
 │   ├── automated_testing.py      # Multi-model test runner with stdin streaming
 │   ├── tasks.json                # Standard 10 algorithmic benchmark tasks
 │   ├── tasks_complex.json        # Advanced algorithmic task set 2
-│   ├── tasks_all.json            # Full 20-task benchmark suite
+│   ├── tasks_code_generation.json # Code generation tasks (20 tasks, mode: generate)
+│   ├── tasks_bug_fixing.json      # Bug fixing tasks (5 tasks, mode: fix_bugs)
 │   ├── TASK_EVAL_REPORT.md       # Detailed task-by-task execution report
 │   ├── MODEL_COMPARISON_REPORT.md# Cross-model evaluation matrix
 │   ├── TASKS_COMPLEX_REPORT.md   # Task set 2 evaluation report
@@ -252,11 +253,24 @@ python3 interfaces/tui/main.py
 
 The [`testing/`](testing/) directory contains an automated testing harness for feeding algorithmic tasks to Jesse models, compiling/executing them against standard input (`stdin`), and verifying outputs against expected results.
 
+### Two Task Types
+
+| Type | `mode` | Task file | What the model must do |
+| :--- | :--- | :--- | :--- |
+| **Code generation** | `generate` | [`tasks_code_generation.json`](testing/tasks_code_generation.json) | Write a new standalone program from a prompt (20 tasks). |
+| **Bug fixing** | `fix_bugs` | [`tasks_bug_fixing.json`](testing/tasks_bug_fixing.json) | Find the bugs in a small existing program and return the corrected program (5 tasks). |
+
 ### Running Automated Tests
 
 ```bash
 # Run all benchmark tasks against default model (jesse-prod)
 python3 testing/automated_testing.py
+
+# Run the code generation task set (jesse-prod)
+python3 testing/automated_testing.py --tasks-file testing/tasks_code_generation.json --model jesse-prod
+
+# Run the bug fixing task set (jesse-prod)
+python3 testing/automated_testing.py --tasks-file testing/tasks_bug_fixing.json --model jesse-prod
 
 # Run only Python tasks
 python3 testing/automated_testing.py --lang python
@@ -281,12 +295,16 @@ Run the full pytest suite:
 pytest tests -v
 ```
 
-All 43 unit and integration tests verify:
+The suite collects **66 tests**: **63 pass** locally without network access, and the 3
+`@pytest.mark.integration` tests exercise the live Jesse API (skipped unless `JESSE_API_KEY`
+is set). They verify:
 - API authentication, rate limiting, and network timeout error translations.
 - Memory history sliding windows and serialization.
 - Subprocess isolation, ANSI terminal escape stripping, and process termination.
 - FastAPI endpoints (`/api/health`, `/api/model`, `/api/chat/stream`, `/api/execute`).
 - Live streaming and multi-turn conversation parity.
+- Benchmark grading rules: tolerant value matching (labels and line breaks ignored) plus strict one-to-one mode.
+- Bug-fixing task set integrity: every planted buggy program must fail its expected output.
 
 ---
 

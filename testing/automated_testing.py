@@ -34,6 +34,13 @@ OUTPUT_MATCHING_TOLERANT = (
     "tolerant (value labels & line breaks ignored; values and their order must match)"
 )
 
+# The two benchmark task types.
+#   generate : write new code from a prompt (tasks_code_generation.json)
+#   fix_bugs : repair bugs in an existing program (tasks_bug_fixing.json)
+TASK_MODE_GENERATE = "generate"
+TASK_MODE_FIX_BUGS = "fix_bugs"
+LEGACY_FIX_MODE_ALIASES = ("debug",)
+
 
 def normalize_output(text: str) -> str:
     """Normalize output by stripping trailing whitespace per line and overall."""
@@ -80,7 +87,8 @@ def build_task_prompt(task: Dict[str, Any]) -> str:
     description = task["task"]
     sample_input = task["input"]
     expected_output = task["expected_output"]
-    debug_mode = str(task.get("mode", "")).lower() == "debug"
+    task_mode = str(task.get("mode", TASK_MODE_GENERATE)).strip().lower()
+    fix_mode = task_mode in (TASK_MODE_FIX_BUGS, *LEGACY_FIX_MODE_ALIASES)
 
     lang_instructions = {
         "python": "Read from sys.stdin and print to sys.stdout.",
@@ -88,7 +96,7 @@ def build_task_prompt(task: Dict[str, Any]) -> str:
         "cpp": "Read from std::cin and write to std::cout.",
     }.get(lang.lower(), "Read from standard input and write to standard output.")
 
-    if debug_mode:
+    if fix_mode:
         heading = (
             f"Find and fix every bug in the following {lang} program. It currently produces "
             f"wrong results, crashes, or behaves incorrectly:"
