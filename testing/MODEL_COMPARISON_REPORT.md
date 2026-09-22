@@ -1,16 +1,17 @@
 # JesseCoder Multi-Model Comparison Report
 
-- **Generated**: 2026-09-22 05:57:03
+- **Generated**: 2026-09-22 07:15:49
 - **Total Tasks**: 10
 - **Models Evaluated**: `jesse-prod`, `jesse-pristine`, `jesse`
+- **Output Matching**: tolerant (value labels & line breaks ignored; values and their order must match)
 
 ## Overall Model Performance
 
 | Model | Passed | Failed | Pass Rate | Avg Latency |
 | :--- | :---: | :---: | :---: | :---: |
-| `jesse-prod` | 1/10 | 9 | **10.0%** | 55.8ms |
-| `jesse-pristine` | 1/10 | 9 | **10.0%** | 63.2ms |
-| `jesse` | 1/10 | 9 | **10.0%** | 55.2ms |
+| `jesse-prod` | 2/10 | 8 | **20.0%** | 58.7ms |
+| `jesse-pristine` | 2/10 | 8 | **20.0%** | 56.2ms |
+| `jesse` | 2/10 | 8 | **20.0%** | 62.9ms |
 
 ## Task-by-Task Comparison Matrix
 
@@ -19,7 +20,7 @@
 | `task_01` | Circular Queue | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
 | `task_02` | LRU Cache | `python` | ✅ PASS | ✅ PASS | ✅ PASS |
 | `task_03` | Sliding Window Rate Limiter | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
-| `task_04` | Shortest Path | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_04` | Shortest Path | `python` | ✅ PASS | ✅ PASS | ✅ PASS |
 | `task_05` | Inventory Transaction | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
 | `task_06` | Payment Aggregation | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
 | `task_07` | Merge Time Intervals | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |

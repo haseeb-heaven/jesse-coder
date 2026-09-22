@@ -2,25 +2,26 @@
 
 - **Model**: `jesse-prod`
 - **Total Tasks**: 10
-- **Passed**: 1
-- **Failed**: 9
-- **Pass Rate**: 10.0%
-- **Timestamp**: 2026-09-22 05:46:29
+- **Passed**: 0
+- **Failed**: 10
+- **Pass Rate**: 0.0%
+- **Output Matching**: tolerant (value labels & line breaks ignored; values and their order must match)
+- **Timestamp**: 2026-09-22 07:16:18
 
 ## Summary Table
 
 | Task ID | Title | Language | Status | Execution Time | Notes |
 | :--- | :--- | :--- | :---: | :---: | :--- |
 | `task_11` | Weighted Job Scheduling | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
-| `task_12` | Dynamic Connectivity | `python` | ❌ FAIL | 41.9ms | Output mismatch. |
-| `task_13` | Event Stream Deduplication | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
+| `task_12` | Dynamic Connectivity | `cpp` | ❌ FAIL | 0.0ms | Model returned a 'python' code block instead of 'cpp'; the code was not executed. |
+| `task_13` | Event Stream Deduplication | `javascript` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
 | `task_14` | Limit Order Matching Engine | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
-| `task_15` | Weighted Grid Shortest Path | `python` | ❌ FAIL | 41.4ms | Output mismatch. |
-| `task_16` | Parallel Dependency Scheduler | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
+| `task_15` | Weighted Grid Shortest Path | `cpp` | ❌ FAIL | 0.0ms | Model returned a 'python' code block instead of 'cpp'; the code was not executed. |
+| `task_16` | Parallel Dependency Scheduler | `javascript` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
 | `task_17` | TTL Key Value Store | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
-| `task_18` | Range Updates and Queries | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
-| `task_19` | LFU Cache | `python` | ✅ PASS | 33.2ms | Matches expected output |
-| `task_20` | DAG Critical Path | `python` | ❌ FAIL | 30.1ms | Output mismatch. |
+| `task_18` | Range Updates and Queries | `cpp` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
+| `task_19` | LFU Cache | `javascript` | ❌ FAIL | 0.0ms | Model returned a 'python' code block instead of 'javascript'; the code was not executed. |
+| `task_20` | DAG Critical Path | `python` | ❌ FAIL | 80.2ms | Output mismatch. |
 
 ## Detailed Task Results
 
@@ -50,10 +51,10 @@ No valid code block extracted from model response.
 
 ---
 
-### task_12 - Dynamic Connectivity (PYTHON) [FAIL]
+### task_12 - Dynamic Connectivity (CPP) [FAIL]
 
 #### Extracted Code:
-```python
+```cpp
 def solve(*args, **kwargs):
     """Deterministic algorithmic implementation by Jesse."""
     pass
@@ -76,28 +77,17 @@ NO
 
 #### Actual Output:
 ```
-Jesse coding solver ready.
-
+(none)
 ```
 
 #### Diagnostics:
 ```
-Output mismatch.
-Expected:
-YES
-3
-NO
-5
-YES
-2
-NO
-Got:
-Jesse coding solver ready.
+Model returned a 'python' code block instead of 'cpp'; the code was not executed.
 ```
 
 ---
 
-### task_13 - Event Stream Deduplication (PYTHON) [FAIL]
+### task_13 - Event Stream Deduplication (JAVASCRIPT) [FAIL]
 
 #### Model Response (No Code Extracted):
 ```
@@ -163,10 +153,10 @@ No valid code block extracted from model response.
 
 ---
 
-### task_15 - Weighted Grid Shortest Path (PYTHON) [FAIL]
+### task_15 - Weighted Grid Shortest Path (CPP) [FAIL]
 
 #### Extracted Code:
-```python
+```cpp
 class BSTNode:
     def __init__(self, val: int):
         self.val = val
@@ -232,23 +222,17 @@ PATHS 1
 
 #### Actual Output:
 ```
-In-order traversal: [20, 30, 40, 50, 60, 70, 80]
-
+(none)
 ```
 
 #### Diagnostics:
 ```
-Output mismatch.
-Expected:
-COST 12
-PATHS 1
-Got:
-In-order traversal: [20, 30, 40, 50, 60, 70, 80]
+Model returned a 'python' code block instead of 'cpp'; the code was not executed.
 ```
 
 ---
 
-### task_16 - Parallel Dependency Scheduler (PYTHON) [FAIL]
+### task_16 - Parallel Dependency Scheduler (JAVASCRIPT) [FAIL]
 
 #### Model Response (No Code Extracted):
 ```
@@ -311,7 +295,7 @@ No valid code block extracted from model response.
 
 ---
 
-### task_18 - Range Updates and Queries (PYTHON) [FAIL]
+### task_18 - Range Updates and Queries (CPP) [FAIL]
 
 #### Model Response (No Code Extracted):
 ```
@@ -341,10 +325,10 @@ No valid code block extracted from model response.
 
 ---
 
-### task_19 - LFU Cache (PYTHON) [PASS]
+### task_19 - LFU Cache (JAVASCRIPT) [FAIL]
 
 #### Extracted Code:
-```python
+```javascript
 from collections import OrderedDict
 import re
 import sys
@@ -453,15 +437,12 @@ if __name__ == '__main__':
 
 #### Actual Output:
 ```
-10
-20
--1
-40
-10
--1
-40
-50
+(none)
+```
 
+#### Diagnostics:
+```
+Model returned a 'python' code block instead of 'javascript'; the code was not executed.
 ```
 
 ---
