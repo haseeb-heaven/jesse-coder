@@ -1,22 +1,41 @@
 # JesseCoder Multi-Model Comparison Report
 
-- **Generated**: 2026-09-22 05:59:24
-- **Total Tasks**: 1
+- **Generated**: 2026-09-22 06:09:49
+- **Total Tasks**: 20
 - **Models Evaluated**: `jesse-prod`, `jesse-pristine`, `jesse`
 
 ## Overall Model Performance
 
 | Model | Passed | Failed | Pass Rate | Avg Latency |
 | :--- | :---: | :---: | :---: | :---: |
-| `jesse-prod` | 0/1 | 1 | **0.0%** | 0.0ms |
-| `jesse-pristine` | 0/1 | 1 | **0.0%** | 0.0ms |
-| `jesse` | 0/1 | 1 | **0.0%** | 0.0ms |
+| `jesse-prod` | 2/20 | 18 | **10.0%** | 32.8ms |
+| `jesse-pristine` | 2/20 | 18 | **10.0%** | 37.4ms |
+| `jesse` | 2/20 | 18 | **10.0%** | 38.0ms |
 
 ## Task-by-Task Comparison Matrix
 
 | Task ID | Title | Language | `jesse-prod` | `jesse-pristine` | `jesse` |
 | :--- | :--- | :---: | :---: | :---: | :---: |
+| `task_01` | Circular Queue | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_02` | LRU Cache | `python` | ✅ PASS | ✅ PASS | ✅ PASS |
+| `task_03` | Sliding Window Rate Limiter | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_04` | Shortest Path | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_05` | Inventory Transaction | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_06` | Payment Aggregation | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_08` | Binary Search Tree | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_09` | Dependency Build Order | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_10` | Video Watch Time | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
 | `task_11` | Weighted Job Scheduling | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_12` | Dynamic Connectivity | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_13` | Event Stream Deduplication | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_14` | Limit Order Matching Engine | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_15` | Weighted Grid Shortest Path | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_16` | Parallel Dependency Scheduler | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_17` | TTL Key Value Store | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_18` | Range Updates and Queries | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
+| `task_19` | LFU Cache | `python` | ✅ PASS | ✅ PASS | ✅ PASS |
+| `task_20` | DAG Critical Path | `python` | ❌ FAIL | ❌ FAIL | ❌ FAIL |
 
 ## Detailed Analysis & Observations
 
