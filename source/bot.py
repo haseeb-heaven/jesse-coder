@@ -7,6 +7,7 @@ extracts code, and executes it. No synthesis, no hardcoding.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 try:
@@ -100,6 +101,7 @@ class JesseCodingBot:
         self.last_assistant_response: Optional[str] = None
         self.last_extracted_code: Optional[ExtractedCodeBlock] = None
         self.last_execution_result: Optional[ExecutionResult] = None
+        self.last_message_id: Optional[str] = None
 
     def _prepare_prompt_with_context(self, user_prompt: str) -> str:
         """
@@ -156,6 +158,7 @@ class JesseCodingBot:
 
             full_text = "".join(accumulated)
             self.last_raw_api_response = full_text
+            self.last_message_id = getattr(self.client, "last_message_id", None)
 
             if full_text.strip():
                 self.conversation.add_assistant_message(full_text)
@@ -198,6 +201,7 @@ class JesseCodingBot:
                 **extra_params,
             )
             self.last_raw_api_response = response
+            self.last_message_id = getattr(self.client, "last_message_id", None)
             self.conversation.add_assistant_message(response)
             self.last_assistant_response = response
             extracted = get_primary_code_block(response)
@@ -207,6 +211,29 @@ class JesseCodingBot:
         except Exception:
             self.conversation.pop_last()
             raise
+
+    def submit_correction(
+        self,
+        correction: str,
+        message_id: Optional[str] = None,
+        model: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Submit a correction to Jesse API (/feedback) so the model learns from this example.
+        """
+        msg_id = (
+            message_id
+            or self.last_message_id
+            or getattr(self.client, "last_message_id", None)
+            or f"msg_{int(time.time())}"
+        )
+        target_model = model or self.config.model
+        return self.client.submit_feedback(
+            message_id=msg_id,
+            rating="thumbs_down",
+            correction=correction,
+            model=target_model,
+        )
 
     def execute_code(
         self,

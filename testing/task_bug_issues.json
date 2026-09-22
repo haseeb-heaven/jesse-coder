@@ -1,0 +1,62 @@
+[
+    {
+        "id": "bug_01",
+        "language": "python",
+        "mode": "repair",
+        "title": "Priority Task Scheduler",
+        "task": "Tasks with a higher priority number must execute before tasks with a lower priority number. Tasks having the same priority must execute in insertion order.",
+        "buggy_code": "import heapq\n\nclass Scheduler:\n    def __init__(self):\n        self.tasks = []\n        self.order = 0\n\n    def add(self, name, priority):\n        heapq.heappush(self.tasks, (priority, self.order, name))\n        self.order += 1\n\n    def run(self):\n        while self.tasks:\n            priority, _, name = heapq.heappop(self.tasks)\n            print(name, priority)\n\nn = int(input())\nscheduler = Scheduler()\n\nfor _ in range(n):\n    name, priority = input().split()\n    scheduler.add(name, int(priority))\n\nscheduler.run()\n",
+        "input": "4\nbackup 2\npayment 5\nemail 1\nsecurity 5\n",
+        "buggy_output": "email 1\nbackup 2\npayment 5\nsecurity 5\n",
+        "expected_output": "payment 5\nsecurity 5\nbackup 2\nemail 1\n",
+        "fixed_code": "import heapq\n\nclass Scheduler:\n    def __init__(self):\n        self.tasks = []\n        self.order = 0\n\n    def add(self, name, priority):\n        heapq.heappush(self.tasks, (-priority, self.order, name))\n        self.order += 1\n\n    def run(self):\n        while self.tasks:\n            priority, _, name = heapq.heappop(self.tasks)\n            print(name, -priority)\n\nn = int(input())\nscheduler = Scheduler()\n\nfor _ in range(n):\n    name, priority = input().split()\n    scheduler.add(name, int(priority))\n\nscheduler.run()\n"
+    },
+    {
+        "id": "bug_02",
+        "language": "cpp",
+        "mode": "repair",
+        "title": "Disjoint Set Component Size",
+        "task": "Maintain connected components using union-find. CONNECTED must determine whether two nodes belong to the same component. SIZE must return the number of nodes in the component containing the requested node.",
+        "buggy_code": "#include <iostream>\n#include <vector>\n#include <numeric>\n#include <string>\nusing namespace std;\n\nclass DSU {\n    vector<int> parent, sz;\n\npublic:\n    DSU(int n) : parent(n), sz(n, 1) {\n        iota(parent.begin(), parent.end(), 0);\n    }\n\n    int find(int x) {\n        return parent[x] == x ? x : parent[x] = find(parent[x]);\n    }\n\n    void unite(int a, int b) {\n        a = find(a);\n        b = find(b);\n\n        if (a == b) return;\n\n        if (sz[a] < sz[b]) swap(a, b);\n\n        parent[b] = a;\n        sz[b] += sz[a];\n    }\n\n    bool connected(int a, int b) {\n        return find(a) == find(b);\n    }\n\n    int size(int x) {\n        return sz[find(x)];\n    }\n};\n\nint main() {\n    int n, operations;\n    cin >> n >> operations;\n\n    DSU dsu(n);\n\n    while (operations--) {\n        string command;\n        cin >> command;\n\n        if (command == \"UNION\") {\n            int a, b;\n            cin >> a >> b;\n            dsu.unite(a, b);\n        } else if (command == \"CONNECTED\") {\n            int a, b;\n            cin >> a >> b;\n            cout << (dsu.connected(a, b) ? \"YES\" : \"NO\") << \"\\n\";\n        } else if (command == \"SIZE\") {\n            int x;\n            cin >> x;\n            cout << dsu.size(x) << \"\\n\";\n        }\n    }\n}\n",
+        "input": "6 8\nUNION 0 1\nUNION 1 2\nUNION 3 4\nUNION 2 4\nCONNECTED 0 4\nSIZE 2\nSIZE 3\nCONNECTED 0 5\n",
+        "buggy_output": "YES\n1\n1\nNO\n",
+        "expected_output": "YES\n5\n5\nNO\n",
+        "fixed_code": "#include <iostream>\n#include <vector>\n#include <numeric>\n#include <string>\nusing namespace std;\n\nclass DSU {\n    vector<int> parent, sz;\n\npublic:\n    DSU(int n) : parent(n), sz(n, 1) {\n        iota(parent.begin(), parent.end(), 0);\n    }\n\n    int find(int x) {\n        return parent[x] == x ? x : parent[x] = find(parent[x]);\n    }\n\n    void unite(int a, int b) {\n        a = find(a);\n        b = find(b);\n\n        if (a == b) return;\n\n        if (sz[a] < sz[b]) swap(a, b);\n\n        parent[b] = a;\n        sz[a] += sz[b];\n    }\n\n    bool connected(int a, int b) {\n        return find(a) == find(b);\n    }\n\n    int size(int x) {\n        return sz[find(x)];\n    }\n};\n\nint main() {\n    int n, operations;\n    cin >> n >> operations;\n\n    DSU dsu(n);\n\n    while (operations--) {\n        string command;\n        cin >> command;\n\n        if (command == \"UNION\") {\n            int a, b;\n            cin >> a >> b;\n            dsu.unite(a, b);\n        } else if (command == \"CONNECTED\") {\n            int a, b;\n            cin >> a >> b;\n            cout << (dsu.connected(a, b) ? \"YES\" : \"NO\") << \"\\n\";\n        } else if (command == \"SIZE\") {\n            int x;\n            cin >> x;\n            cout << dsu.size(x) << \"\\n\";\n        }\n    }\n}\n"
+    },
+    {
+        "id": "bug_03",
+        "language": "javascript",
+        "mode": "repair",
+        "title": "User Session Grouping",
+        "task": "Group events into sessions independently for each user. Consecutive events from the same user belong to the same session when their time gap is at most 30 seconds. Print sessions sorted by user and then by start time.",
+        "buggy_code": "const fs = require(\"fs\");\n\nconst lines = fs.readFileSync(0, \"utf8\").trim().split(\"\\n\");\nconst n = Number(lines[0]);\nconst sessions = [];\nlet current = null;\n\nfor (let i = 1; i <= n; i++) {\n    const [user, timeText] = lines[i].trim().split(/\\s+/);\n    const time = Number(timeText);\n\n    if (!current || current.user !== user || time - current.end > 30) {\n        current = { user, start: time, end: time, count: 1 };\n        sessions.push(current);\n    } else {\n        current.end = time;\n        current.count++;\n    }\n}\n\nsessions.sort((a, b) =>\n    a.user.localeCompare(b.user) || a.start - b.start\n);\n\nfor (const s of sessions) {\n    console.log(`${s.user} ${s.start} ${s.end} ${s.count}`);\n}\n",
+        "input": "6\nalice 0\nbob 5\nalice 20\nbob 25\nalice 60\nbob 70\n",
+        "buggy_output": "alice 0 0 1\nalice 20 20 1\nalice 60 60 1\nbob 5 5 1\nbob 25 25 1\nbob 70 70 1\n",
+        "expected_output": "alice 0 20 2\nalice 60 60 1\nbob 5 25 2\nbob 70 70 1\n",
+        "fixed_code": "const fs = require(\"fs\");\n\nconst lines = fs.readFileSync(0, \"utf8\").trim().split(\"\\n\");\nconst n = Number(lines[0]);\nconst sessions = [];\nconst currentByUser = new Map();\n\nfor (let i = 1; i <= n; i++) {\n    const [user, timeText] = lines[i].trim().split(/\\s+/);\n    const time = Number(timeText);\n    let current = currentByUser.get(user);\n\n    if (!current || time - current.end > 30) {\n        current = { user, start: time, end: time, count: 1 };\n        sessions.push(current);\n        currentByUser.set(user, current);\n    } else {\n        current.end = time;\n        current.count++;\n    }\n}\n\nsessions.sort((a, b) =>\n    a.user.localeCompare(b.user) || a.start - b.start\n);\n\nfor (const s of sessions) {\n    console.log(`${s.user} ${s.start} ${s.end} ${s.count}`);\n}\n"
+    },
+    {
+        "id": "bug_04",
+        "language": "python",
+        "mode": "repair",
+        "title": "Dijkstra Shortest Paths",
+        "task": "Compute the shortest distance from node 0 to every node in a directed graph with non-negative edge weights. Print INF for unreachable nodes.",
+        "buggy_code": "import heapq\n\nn, m = map(int, input().split())\ngraph = [[] for _ in range(n)]\n\nfor _ in range(m):\n    u, v, w = map(int, input().split())\n    graph[u].append((v, w))\n\ndist = [float(\"inf\")] * n\ndist[0] = 0\nqueue = [(0, 0)]\n\nwhile queue:\n    current_dist, node = heapq.heappop(queue)\n\n    if current_dist > dist[node]:\n        continue\n\n    for nxt, weight in graph[node]:\n        new_dist = current_dist + weight\n\n        if new_dist > dist[nxt]:\n            dist[nxt] = new_dist\n            heapq.heappush(queue, (new_dist, nxt))\n\nprint(\" \".join(\"INF\" if x == float(\"inf\") else str(x) for x in dist))\n",
+        "input": "5 6\n0 1 4\n0 2 1\n2 1 2\n1 3 1\n2 3 5\n3 4 3\n",
+        "buggy_output": "0 INF INF INF INF\n",
+        "expected_output": "0 3 1 4 7\n",
+        "fixed_code": "import heapq\n\nn, m = map(int, input().split())\ngraph = [[] for _ in range(n)]\n\nfor _ in range(m):\n    u, v, w = map(int, input().split())\n    graph[u].append((v, w))\n\ndist = [float(\"inf\")] * n\ndist[0] = 0\nqueue = [(0, 0)]\n\nwhile queue:\n    current_dist, node = heapq.heappop(queue)\n\n    if current_dist > dist[node]:\n        continue\n\n    for nxt, weight in graph[node]:\n        new_dist = current_dist + weight\n\n        if new_dist < dist[nxt]:\n            dist[nxt] = new_dist\n            heapq.heappush(queue, (new_dist, nxt))\n\nprint(\" \".join(\"INF\" if x == float(\"inf\") else str(x) for x in dist))\n"
+    },
+    {
+        "id": "bug_05",
+        "language": "cpp",
+        "mode": "repair",
+        "title": "Dependency Build Order",
+        "task": "Calculate a valid topological build order. A dependency A B means A must be completed before B. When multiple projects become available, preserve their original declaration order. Print CYCLE only if no valid ordering exists.",
+        "buggy_code": "#include <iostream>\n#include <vector>\n#include <queue>\n#include <string>\n#include <unordered_map>\nusing namespace std;\n\nint main() {\n    int n, m;\n    cin >> n >> m;\n\n    vector<string> names(n);\n    unordered_map<string, int> index;\n\n    for (int i = 0; i < n; i++) {\n        cin >> names[i];\n        index[names[i]] = i;\n    }\n\n    vector<vector<int>> graph(n);\n    vector<int> indegree(n, 0);\n\n    for (int i = 0; i < m; i++) {\n        string a, b;\n        cin >> a >> b;\n\n        int from = index[a];\n        int to = index[b];\n\n        graph[from].push_back(to);\n        indegree[from]++;\n    }\n\n    queue<int> ready;\n\n    for (int i = 0; i < n; i++) {\n        if (indegree[i] == 0)\n            ready.push(i);\n    }\n\n    vector<int> order;\n\n    while (!ready.empty()) {\n        int current = ready.front();\n        ready.pop();\n\n        order.push_back(current);\n\n        for (int next : graph[current]) {\n            indegree[next]--;\n\n            if (indegree[next] == 0)\n                ready.push(next);\n        }\n    }\n\n    if ((int)order.size() != n) {\n        cout << \"CYCLE\\n\";\n        return 0;\n    }\n\n    for (int i = 0; i < n; i++) {\n        if (i) cout << \" \";\n        cout << names[order[i]];\n    }\n\n    cout << \"\\n\";\n}\n",
+        "input": "5 5\nA B C D E\nA B\nA C\nB D\nC D\nD E\n",
+        "buggy_output": "CYCLE\n",
+        "expected_output": "A B C D E\n",
+        "fixed_code": "#include <iostream>\n#include <vector>\n#include <queue>\n#include <string>\n#include <unordered_map>\nusing namespace std;\n\nint main() {\n    int n, m;\n    cin >> n >> m;\n\n    vector<string> names(n);\n    unordered_map<string, int> index;\n\n    for (int i = 0; i < n; i++) {\n        cin >> names[i];\n        index[names[i]] = i;\n    }\n\n    vector<vector<int>> graph(n);\n    vector<int> indegree(n, 0);\n\n    for (int i = 0; i < m; i++) {\n        string a, b;\n        cin >> a >> b;\n\n        int from = index[a];\n        int to = index[b];\n\n        graph[from].push_back(to);\n        indegree[to]++;\n    }\n\n    queue<int> ready;\n\n    for (int i = 0; i < n; i++) {\n        if (indegree[i] == 0)\n            ready.push(i);\n    }\n\n    vector<int> order;\n\n    while (!ready.empty()) {\n        int current = ready.front();\n        ready.pop();\n\n        order.push_back(current);\n\n        for (int next : graph[current]) {\n            indegree[next]--;\n\n            if (indegree[next] == 0)\n                ready.push(next);\n        }\n    }\n\n    if ((int)order.size() != n) {\n        cout << \"CYCLE\\n\";\n        return 0;\n    }\n\n    for (int i = 0; i < n; i++) {\n        if (i) cout << \" \";\n        cout << names[order[i]];\n    }\n\n    cout << \"\\n\";\n}\n"
+    }
+]

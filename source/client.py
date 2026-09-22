@@ -66,6 +66,7 @@ class JesseClient:
             headers={"Authorization": f"Bearer {self._api_key}"},
             timeout=30.0,
         )
+        self.last_message_id: Optional[str] = None
 
     def _map_openai_error(self, err: Exception) -> JesseBotError:
         """Map raw OpenAI or system exceptions to custom JesseBotError types."""
@@ -211,6 +212,7 @@ class JesseClient:
                 stream=False,
                 **extra_params,
             )
+            self.last_message_id = getattr(response, "id", None)
             if not response.choices:
                 return ""
             return response.choices[0].message.content or ""

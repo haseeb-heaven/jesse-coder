@@ -126,3 +126,118 @@ def test_build_task_prompt_without_stdin():
     assert "Expected Output:\nOK 800 700" in prompt
     assert "sys.stdin" not in prompt
     assert "Sample Input:" not in prompt
+
+
+def test_cli_train_argument():
+    from testing.automated_testing import build_argument_parser
+
+    parser = build_argument_parser()
+    # Default is False
+    args_default = parser.parse_args([])
+    assert args_default.train_model is False
+
+    # --train
+    args_train = parser.parse_args(["--train"])
+    assert args_train.train_model is True
+
+    # --train-model
+    args_train_model = parser.parse_args(["--train-model"])
+    assert args_train_model.train_model is True
+
+    # --correct
+    args_correct = parser.parse_args(["--correct"])
+    assert args_correct.train_model is True
+
+
+def test_evaluate_model_on_tasks_trains_on_failure_with_exact_code():
+    task = {
+        "id": "bug_01",
+        "title": "Bank Transfer",
+        "language": "python",
+        "task": "Fix transfer bug",
+        "input": "",
+        "expected_output": "OK 800 700\nREJECTED 800 700\n",
+        "exact_code": "class Account:\n    pass\n",
+    }
+
+    mock_bot = MagicMock()
+    # Model returns wrong output
+    mock_bot.ask.return_value = "```python\nprint('WRONG')\n```"
+    mock_bot.submit_correction.return_value = {"ok": True, "learning_active": True}
+
+    mock_executor = MagicMock(spec=CodeExecutor)
+    mock_executor.execute_code.return_value = ExecutionResult(
+        stdout="WRONG\n", stderr="", output="WRONG\n", exit_code=0, duration_ms=5.0
+    )
+
+    with patch("testing.automated_testing.JesseCodingBot", return_value=mock_bot):
+        report = evaluate_model_on_tasks(
+            tasks=[task],
+            model_name="jesse-prod",
+            executor=mock_executor,
+            strict_output=False,
+            retries=0,
+            train_model=True,
+        )
+
+    assert report["passed"] == 0
+    assert report["trained_count"] == 1
+    assert report["train_model_enabled"] is True
+    task_res = report["tasks"][0]
+    assert task_res["passed"] is False
+    assert task_res["trained"] is True
+    assert mock_bot.submit_correction.call_count == 1
+    corr_arg = mock_bot.submit_correction.call_args[1]["correction"]
+    assert "class Account:" in corr_arg
+
+
+def test_evaluate_model_on_tasks_skips_train_when_passed():
+    task = {
+        "id": "bug_01",
+        "title": "Bank Transfer",
+        "language": "python",
+        "task": "Fix transfer bug",
+        "input": "",
+        "expected_output": "OK 800 700\nREJECTED 800 700\n",
+        "exact_code": "class Account:\n    pass\n",
+    }
+
+    mock_bot = MagicMock()
+    mock_bot.ask.return_value = "```python\nprint('OK 800 700\\nREJECTED 800 700')\n```"
+
+    mock_executor = MagicMock(spec=CodeExecutor)
+    mock_executor.execute_code.return_value = ExecutionResult(
+        stdout="OK 800 700\nREJECTED 800 700\n", stderr="", output="OK 800 700\nREJECTED 800 700\n", exit_code=0, duration_ms=5.0
+    )
+
+    with patch("testing.automated_testing.JesseCodingBot", return_value=mock_bot):
+        report = evaluate_model_on_tasks(
+            tasks=[task],
+            model_name="jesse-prod",
+            executor=mock_executor,
+            strict_output=False,
+            retries=0,
+            train_model=True,
+        )
+
+    assert report["passed"] == 1
+    assert report["trained_count"] == 0
+    assert mock_bot.submit_correction.call_count == 0
+
+
+def test_bot_submit_correction_calls_client():
+    from source.bot import JesseCodingBot
+
+    mock_client = MagicMock()
+    mock_client.submit_feedback.return_value = {"ok": True}
+    mock_client.last_message_id = "msg_123"
+
+    bot = JesseCodingBot(client=mock_client)
+    res = bot.submit_correction("```python\ncode\n```")
+    assert res == {"ok": True}
+    mock_client.submit_feedback.assert_called_once_with(
+        message_id="msg_123",
+        rating="thumbs_down",
+        correction="```python\ncode\n```",
+        model=bot.config.model,
+    )

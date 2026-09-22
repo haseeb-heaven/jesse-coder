@@ -71,3 +71,22 @@ def test_buggy_program_is_small(task):
     """The tasks must stay small: concise functions/classes."""
     blocks = extract_code_blocks(task["task"])
     assert len(blocks[0].code.splitlines()) <= 100, f"{task['id']}: program too large"
+
+
+@pytest.mark.parametrize("task", TASKS, ids=[task["id"] for task in TASKS])
+def test_exact_code_produces_expected_output(task):
+    """Verifies that exact_code (if provided) compiles/runs and produces expected output."""
+    exact = task.get("exact_code")
+    if not exact:
+        pytest.skip(f"{task['id']}: no exact_code specified")
+    result = EXECUTOR.execute_code(
+        code=exact,
+        language=task["language"],
+        stdin_data=task.get("input", ""),
+        timeout=10.0,
+    )
+    assert result.is_success, f"{task['id']}: exact_code failed execution: {result.error or result.stderr}"
+    assert outputs_equivalent(task["expected_output"], result.stdout), (
+        f"{task['id']}: exact_code stdout did not match expected output.\n"
+        f"Expected:\n{task['expected_output']}\nGot:\n{result.stdout}"
+    )
