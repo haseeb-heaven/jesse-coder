@@ -145,6 +145,18 @@
         </svg>
       </button>
 
+      <!-- Memory Button -->
+      <button id="btn-memory" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-violet-100 dark:bg-slate-900 dark:hover:bg-violet-950/40 border border-slate-300 hover:border-violet-400 dark:border-slate-700/60 dark:hover:border-violet-700 text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-300 transition shrink-0" title="View &amp; manage Jesse's memory">
+        <span>🧠</span>
+        <span class="hidden sm:inline">Memory</span>
+      </button>
+
+      <!-- Documents Button -->
+      <button id="btn-documents" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-100 dark:bg-slate-900 dark:hover:bg-emerald-950/40 border border-slate-300 hover:border-emerald-400 dark:border-slate-700/60 dark:hover:border-emerald-700 text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-300 transition shrink-0" title="Store &amp; search documents">
+        <span>📄</span>
+        <span class="hidden sm:inline">Docs</span>
+      </button>
+
       <!-- RAW API Button -->
       <button id="btn-toggle-raw" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700/60 text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-300 transition shrink-0" title="View raw Jesse API payload (Ctrl+R)">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,6 +370,136 @@
           <span id="raw-model-info"></span>
         </div>
         <pre id="raw-content" class="whitespace-pre-wrap font-mono text-xs text-cyan-200 leading-relaxed"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- Feedback Correction Modal                                          -->
+  <!-- ================================================================== -->
+  <div id="feedback-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+    <div class="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-950 border border-rose-300 dark:border-rose-700/60 shadow-2xl flex flex-col overflow-hidden">
+      <div class="px-5 py-3 bg-rose-50 dark:bg-rose-950/60 border-b border-rose-200 dark:border-rose-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">👎</span>
+          <div>
+            <h3 class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200">Submit Feedback — Wrong Answer</h3>
+            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Help jesse-prod learn by providing the correct answer (optional)</p>
+          </div>
+        </div>
+        <button id="btn-close-feedback" class="p-1 rounded hover:bg-rose-100 dark:hover:bg-rose-900 text-slate-500 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5 space-y-3">
+        <div>
+          <label class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Correct answer (optional — leave blank to just mark as wrong):</label>
+          <textarea id="feedback-correction-input" rows="4" placeholder="Paste or type the correct code/answer here..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-rose-400 resize-none select-text"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-2">
+          <button id="btn-feedback-cancel" class="px-4 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-mono text-slate-700 dark:text-slate-300 transition">Cancel</button>
+          <button id="btn-feedback-submit" class="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-mono text-xs font-bold shadow transition">Submit Feedback 👎</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- Memory Panel Modal                                                  -->
+  <!-- ================================================================== -->
+  <div id="memory-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+    <div class="w-full max-w-2xl max-h-[80vh] rounded-2xl bg-white dark:bg-slate-950 border border-violet-300 dark:border-violet-700/60 shadow-2xl flex flex-col overflow-hidden">
+      <div class="px-5 py-3 bg-violet-50 dark:bg-violet-950/60 border-b border-violet-200 dark:border-violet-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🧠</span>
+          <div>
+            <h3 class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200">Jesse's Memory</h3>
+            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Facts remembered for your API key</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-memory-refresh" class="px-2.5 py-1 rounded-lg bg-violet-100 dark:bg-violet-900/50 hover:bg-violet-200 dark:hover:bg-violet-800 text-violet-700 dark:text-violet-300 text-xs font-mono transition" title="Refresh memory">↻ Refresh</button>
+          <button id="btn-memory-erase" class="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-950/60 hover:bg-rose-200 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 text-xs font-mono transition" title="Erase all memory">🗑️ Erase All</button>
+          <button id="btn-close-memory" class="p-1 rounded hover:bg-violet-100 dark:hover:bg-violet-900 text-slate-500 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-5">
+        <div id="memory-content" class="font-mono text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed select-text">
+          <span class="text-slate-400 italic">Click Refresh to load memory...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- Documents Panel Modal                                               -->
+  <!-- ================================================================== -->
+  <div id="docs-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+    <div class="w-full max-w-3xl max-h-[85vh] rounded-2xl bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-700/60 shadow-2xl flex flex-col overflow-hidden">
+      <!-- Header -->
+      <div class="px-5 py-3 bg-emerald-50 dark:bg-emerald-950/60 border-b border-emerald-200 dark:border-emerald-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📄</span>
+          <div>
+            <h3 class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200">Jesse Documents</h3>
+            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Store &amp; search documents for retrieval in future conversations</p>
+          </div>
+        </div>
+        <button id="btn-close-docs" class="p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900 text-slate-500 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-950">
+        <button data-docs-tab="store" class="docs-tab px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 transition">📥 Store</button>
+        <button data-docs-tab="list"  class="docs-tab px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">📋 List</button>
+        <button data-docs-tab="search" class="docs-tab px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">🔍 Search</button>
+      </div>
+
+      <!-- Tab: Store -->
+      <div id="docs-tab-store" class="docs-tab-panel flex-1 overflow-auto p-5 space-y-3">
+        <div>
+          <label class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Document Title <span class="text-rose-400">*</span></label>
+          <input id="doc-title-input" type="text" placeholder="e.g. My API Design Notes" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-400 select-text" />
+        </div>
+        <div>
+          <label class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Content <span class="text-rose-400">*</span></label>
+          <textarea id="doc-content-input" rows="8" placeholder="Paste document text, code, or notes here..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-400 resize-none select-text"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-2">
+          <button id="btn-doc-store" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold shadow transition">📥 Store Document</button>
+        </div>
+        <div id="doc-store-result" class="hidden mt-2 p-3 rounded-lg border text-xs font-mono"></div>
+      </div>
+
+      <!-- Tab: List -->
+      <div id="docs-tab-list" class="docs-tab-panel hidden flex-1 overflow-auto p-5">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-mono text-slate-500">Your stored documents</span>
+          <button id="btn-docs-refresh" class="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 hover:bg-emerald-200 dark:hover:bg-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-mono transition">↻ Refresh</button>
+        </div>
+        <div id="docs-list-content" class="space-y-2 text-xs font-mono text-slate-700 dark:text-slate-300 select-text">
+          <span class="text-slate-400 italic">Click Refresh to load documents...</span>
+        </div>
+      </div>
+
+      <!-- Tab: Search -->
+      <div id="docs-tab-search" class="docs-tab-panel hidden flex-1 overflow-auto p-5 space-y-3">
+        <div class="flex gap-2">
+          <input id="doc-query-input" type="text" placeholder="Search your documents semantically..." class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-400 select-text" />
+          <select id="doc-topk-select" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 text-xs font-mono text-slate-700 dark:text-slate-300 focus:outline-none">
+            <option value="3">Top 3</option>
+            <option value="5" selected>Top 5</option>
+            <option value="10">Top 10</option>
+          </select>
+          <button id="btn-doc-search" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold shadow transition">🔍 Search</button>
+        </div>
+        <div id="doc-search-results" class="space-y-2 text-xs font-mono select-text">
+          <span class="text-slate-400 italic">Enter a query and click Search...</span>
+        </div>
       </div>
     </div>
   </div>

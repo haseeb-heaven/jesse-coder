@@ -1,11 +1,17 @@
 /**
  * API client module for JesseCoder backend communication.
- * Handles SSE streaming, code execution, context reset, and health checks.
+ * Handles SSE streaming, code execution, context reset, health checks,
+ * feedback submission, memory management, and document store/search.
  */
 
 import {
   ExecutionResult,
+  FeedbackRating,
+  FeedbackResponse,
   HealthStatus,
+  MemoryResponse,
+  DocumentListResponse,
+  DocumentQueryResponse,
   StreamDoneEvent,
   StreamEvent,
 } from './types';
@@ -77,6 +83,78 @@ export async function getRawResponse(): Promise<RawApiPayload> {
     char_count: data.char_count || 0,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Feedback — let jesse-prod learn from right/wrong answers
+// ---------------------------------------------------------------------------
+
+export async function submitFeedback(
+  messageId: string,
+  rating: FeedbackRating,
+  correction?: string
+): Promise<FeedbackResponse> {
+  const body: Record<string, unknown> = { message_id: messageId, rating };
+  if (correction && correction.trim()) body.correction = correction.trim();
+  const resp = await fetch(`${API_BASE}/api/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  // Feedback always returns gracefully (degraded if API doesn't support it)
+  return resp.json();
+}
+
+// ---------------------------------------------------------------------------
+// Memory — view and erase what Jesse remembers
+// ---------------------------------------------------------------------------
+
+export async function getMemory(): Promise<MemoryResponse> {
+  const resp = await fetch(`${API_BASE}/api/memory`);
+  return resp.json();
+}
+
+export async function deleteMemory(): Promise<MemoryResponse> {
+  const resp = await fetch(`${API_BASE}/api/memory`, { method: 'DELETE' });
+  return resp.json();
+}
+
+// ---------------------------------------------------------------------------
+// Documents — store, list, and search
+// ---------------------------------------------------------------------------
+
+export async function storeDocument(
+  title: string,
+  content: string,
+  metadata?: Record<string, unknown>
+): Promise<DocumentListResponse> {
+  const resp = await fetch(`${API_BASE}/api/documents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, content, metadata }),
+  });
+  return resp.json();
+}
+
+export async function listDocuments(): Promise<DocumentListResponse> {
+  const resp = await fetch(`${API_BASE}/api/documents`);
+  return resp.json();
+}
+
+export async function queryDocuments(
+  query: string,
+  topK: number = 5
+): Promise<DocumentQueryResponse> {
+  const resp = await fetch(`${API_BASE}/api/documents/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, top_k: topK }),
+  });
+  return resp.json();
+}
+
+// ---------------------------------------------------------------------------
+// Chat streaming (SSE)
+// ---------------------------------------------------------------------------
 
 export async function streamChat(
   prompt: string,

@@ -1,6 +1,7 @@
 /**
  * Main application coordinator for JesseCoder WebApp.
- * Supports dual light/dark themes and self-healing auto-repair execution loops.
+ * Supports dual light/dark themes, self-healing auto-repair execution loops,
+ * feedback submission, memory management, and document store/search.
  */
 
 import { UIController } from './ui';
@@ -12,6 +13,9 @@ class JesseCoderApp {
   private lastRawResponse: string = '';
   private lastUserPrompt: string = '';
   private isProcessing: boolean = false;
+  /** Tracks the DOM element of the last finalized assistant message for feedback. */
+  private lastAssistantMsgEl: HTMLElement | null = null;
+  private lastAssistantMsgId: string = '';
 
   constructor() {
     this.ui = new UIController();
@@ -107,6 +111,88 @@ class JesseCoderApp {
         e.preventDefault();
         btnToggleRaw?.dispatchEvent(new MouseEvent('click'));
       }
+    });
+
+    // ── Memory panel ─────────────────────────────────────────────────────────
+    const btnMemory = document.getElementById('btn-memory');
+    btnMemory?.addEventListener('click', () => {
+      this.ui.showMemoryPanel();
+      this.loadMemory();
+    });
+
+    document.getElementById('btn-close-memory')?.addEventListener('click', () => {
+      this.ui.hideMemoryPanel();
+    });
+
+    document.getElementById('btn-memory-refresh')?.addEventListener('click', () => {
+      this.loadMemory();
+    });
+
+    document.getElementById('btn-memory-erase')?.addEventListener('click', async () => {
+      if (!confirm('Erase ALL of Jesse\'s memory for this API key? This cannot be undone.')) return;
+      try {
+        const result = await api.deleteMemory();
+        this.ui.showToast(result.status === 'ok' ? '🗑️ Memory erased!' : '⚠️ Memory erase had issues', result.status !== 'ok');
+        this.loadMemory();
+      } catch (err: any) {
+        this.ui.showToast(`Memory erase failed: ${err.message}`, true);
+      }
+    });
+
+    // ── Docs panel ───────────────────────────────────────────────────────────
+    const btnDocs = document.getElementById('btn-documents');
+    btnDocs?.addEventListener('click', () => {
+      this.ui.showDocsPanel('store');
+    });
+
+    document.getElementById('btn-close-docs')?.addEventListener('click', () => {
+      this.ui.hideDocsPanel();
+    });
+
+    // Tab switching
+    document.querySelectorAll('.docs-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-docs-tab') || 'store';
+        this.ui.switchDocsTab(tab);
+        if (tab === 'list') this.loadDocsList();
+      });
+    });
+
+    // Store document
+    document.getElementById('btn-doc-store')?.addEventListener('click', async () => {
+      const titleInput = document.getElementById('doc-title-input') as HTMLInputElement;
+      const contentInput = document.getElementById('doc-content-input') as HTMLTextAreaElement;
+      const title = titleInput?.value.trim();
+      const content = contentInput?.value.trim();
+      if (!title || !content) {
+        this.ui.showDocStoreResult('⚠️ Title and content are required.', true);
+        return;
+      }
+      try {
+        const result = await api.storeDocument(title, content);
+        const ok = result.status === 'ok';
+        this.ui.showDocStoreResult(
+          ok ? `✅ Document "${title}" stored successfully!` : `⚠️ Store may have issues: ${result.detail}`,
+          !ok
+        );
+        if (ok) { titleInput.value = ''; contentInput.value = ''; }
+      } catch (err: any) {
+        this.ui.showDocStoreResult(`❌ Error: ${err.message}`, true);
+      }
+    });
+
+    // List documents (refresh)
+    document.getElementById('btn-docs-refresh')?.addEventListener('click', () => {
+      this.loadDocsList();
+    });
+
+    // Search documents
+    document.getElementById('btn-doc-search')?.addEventListener('click', () => {
+      this.handleDocSearch();
+    });
+    const docQueryInput = document.getElementById('doc-query-input') as HTMLInputElement;
+    docQueryInput?.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') this.handleDocSearch();
     });
   }
 
@@ -281,10 +367,11 @@ ${diagnostic}
     this.ui.appendUserMessage(prompt);
 
     // Append assistant bubble with streaming placeholder
-    const { contentEl } = this.ui.appendAssistantMessage();
+    const { contentEl, msgId } = this.ui.appendAssistantMessage();
     let accumulatedText = '';
     let executionResult: ExecutionResult | null = null;
     let extractedCodeBlock: { code: string; language: string } | null = null;
+    this.lastAssistantMsgId = msgId;
 
     try {
       const model = this.ui.getSelectedModel();
@@ -328,6 +415,21 @@ ${diagnostic}
 
             // Finalize initial assistant turn
             this.ui.finalizeAssistantMessage(contentEl, accumulatedText || data.full_text, executionResult);
+
+            // Inject 👍/👎 feedback buttons
+            const bubbleEl = contentEl.closest('.assistant-turn') as HTMLElement | null;
+            if (bubbleEl) {
+              this.ui.addFeedbackButtons(
+                contentEl,
+                () => { this.handleFeedback(msgId, bubbleEl, 'thumbs_up'); },
+                () => {
+                  this.ui.showFeedbackModal(
+                    (correction: string) => { this.handleFeedback(msgId, bubbleEl, 'thumbs_down', correction || undefined); },
+                    () => { this.ui.showToast('Feedback cancelled.'); }
+                  );
+                }
+              );
+            }
 
             // Self-Healing Auto-Repair: trigger if execution failed and auto-repair is enabled
             if (
@@ -397,6 +499,79 @@ ${diagnostic}
       this.ui.showToast(`Execution error: ${err.message}`, true);
     } finally {
       this.ui.setExecutingState(false);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Memory helpers
+  // --------------------------------------------------------------------------
+
+  private async loadMemory(): Promise<void> {
+    const contentEl = document.getElementById('memory-content');
+    if (contentEl) contentEl.innerHTML = '<span class="text-slate-400 italic animate-pulse">Loading...</span>';
+    try {
+      const result = await api.getMemory();
+      this.ui.renderMemoryContent(result.data ?? result, result.status === 'degraded');
+    } catch (err: any) {
+      this.ui.renderMemoryContent(`Failed to load memory: ${err.message}`, true);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Document helpers
+  // --------------------------------------------------------------------------
+
+  private async loadDocsList(): Promise<void> {
+    const el = document.getElementById('docs-list-content');
+    if (el) el.innerHTML = '<span class="text-slate-400 italic animate-pulse">Loading...</span>';
+    try {
+      const result = await api.listDocuments();
+      this.ui.renderDocsList(result.data ?? result, result.status === 'degraded');
+    } catch (err: any) {
+      this.ui.renderDocsList(`Failed to load documents: ${err.message}`, true);
+    }
+  }
+
+  private async handleDocSearch(): Promise<void> {
+    const queryInput = document.getElementById('doc-query-input') as HTMLInputElement;
+    const topKSelect = document.getElementById('doc-topk-select') as HTMLSelectElement;
+    const query = queryInput?.value.trim();
+    if (!query) {
+      this.ui.showToast('Please enter a search query.', true);
+      return;
+    }
+    const topK = parseInt(topKSelect?.value || '5', 10);
+    const resultsEl = document.getElementById('doc-search-results');
+    if (resultsEl) resultsEl.innerHTML = '<span class="text-slate-400 italic animate-pulse">Searching...</span>';
+    try {
+      const result = await api.queryDocuments(query, topK);
+      this.ui.renderDocSearchResults(result.data ?? result, result.status === 'degraded');
+    } catch (err: any) {
+      this.ui.renderDocSearchResults(`Search failed: ${err.message}`, true);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Feedback helper — called from feedback buttons on assistant bubbles
+  // --------------------------------------------------------------------------
+
+  private async handleFeedback(
+    msgId: string,
+    msgEl: HTMLElement,
+    rating: 'thumbs_up' | 'thumbs_down',
+    correction?: string
+  ): Promise<void> {
+    try {
+      await api.submitFeedback(msgId, rating, correction);
+      if (rating === 'thumbs_up') {
+        this.ui.showToast('👍 Thanks! jesse-prod learned from this.');
+      } else {
+        this.ui.showToast(
+          correction ? '👎 Correction submitted — jesse-prod will improve!' : '👎 Marked as wrong.'
+        );
+      }
+    } catch (err: any) {
+      this.ui.showToast(`Feedback failed: ${err.message}`, true);
     }
   }
 }

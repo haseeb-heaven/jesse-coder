@@ -232,6 +232,136 @@ async def get_raw() -> Dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Pydantic models for new Jesse API endpoints
+# ---------------------------------------------------------------------------
+
+class FeedbackRequest(BaseModel):
+    message_id: str = Field(..., description="ID of the assistant message being rated")
+    rating: str = Field(..., description="'thumbs_up' or 'thumbs_down'")
+    correction: Optional[str] = Field(None, description="Optional corrected answer for learning")
+    model: Optional[str] = Field(None, description="Model that produced the response")
+
+
+class DocumentStoreRequest(BaseModel):
+    title: str = Field(..., description="Document title")
+    content: str = Field(..., description="Document text content")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Optional key/value metadata")
+
+
+class DocumentQueryRequest(BaseModel):
+    query: str = Field(..., description="Semantic search query")
+    top_k: int = Field(default=5, ge=1, le=20, description="Number of results to return")
+
+
+# ---------------------------------------------------------------------------
+# Feedback endpoint — jesse-prod learns from right/wrong ratings
+# ---------------------------------------------------------------------------
+
+@app.post("/api/feedback")
+async def submit_feedback(req: FeedbackRequest) -> Dict[str, Any]:
+    """Mark an answer right (thumbs_up) or wrong (thumbs_down), with an optional correction.
+    This trains jesse-prod to improve over time."""
+    active_bot = get_bot()
+    if req.rating not in ("thumbs_up", "thumbs_down"):
+        raise HTTPException(status_code=400, detail="rating must be 'thumbs_up' or 'thumbs_down'")
+    try:
+        result = active_bot.client.submit_feedback(
+            message_id=req.message_id,
+            rating=req.rating,
+            correction=req.correction,
+            model=req.model,
+        )
+        logger.info("Feedback submitted: %s for message %s", req.rating, req.message_id)
+        return {"status": "ok", "detail": result}
+    except Exception as exc:
+        logger.warning("Feedback submission error: %s", exc)
+        # Return a graceful degradation — Jesse API may not support feedback on all keys
+        return {"status": "degraded", "detail": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# Memory endpoints — view and erase what Jesse remembers
+# ---------------------------------------------------------------------------
+
+@app.get("/api/memory")
+async def get_memory() -> Dict[str, Any]:
+    """Retrieve all facts Jesse remembers for this API key."""
+    active_bot = get_bot()
+    try:
+        result = active_bot.client.get_memory()
+        return {"status": "ok", "data": result}
+    except Exception as exc:
+        logger.warning("Memory fetch error: %s", exc)
+        return {"status": "degraded", "data": {}, "detail": str(exc)}
+
+
+@app.delete("/api/memory")
+async def delete_memory() -> Dict[str, Any]:
+    """Erase everything Jesse remembers for this API key."""
+    active_bot = get_bot()
+    try:
+        result = active_bot.client.delete_memory()
+        logger.info("Memory erased for API key")
+        return {"status": "ok", "detail": result}
+    except Exception as exc:
+        logger.warning("Memory delete error: %s", exc)
+        return {"status": "degraded", "detail": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# Document endpoints — store, list, and search documents
+# ---------------------------------------------------------------------------
+
+@app.post("/api/documents")
+async def store_document(req: DocumentStoreRequest) -> Dict[str, Any]:
+    """Store a document so Jesse can retrieve it in future conversations."""
+    active_bot = get_bot()
+    if not req.title.strip() or not req.content.strip():
+        raise HTTPException(status_code=400, detail="title and content must not be empty")
+    try:
+        result = active_bot.client.store_document(
+            title=req.title,
+            content=req.content,
+            metadata=req.metadata,
+        )
+        logger.info("Document stored: %s", req.title)
+        return {"status": "ok", "detail": result}
+    except Exception as exc:
+        logger.warning("Document store error: %s", exc)
+        return {"status": "degraded", "detail": str(exc)}
+
+
+@app.get("/api/documents")
+async def list_documents() -> Dict[str, Any]:
+    """List all stored documents for this API key."""
+    active_bot = get_bot()
+    try:
+        result = active_bot.client.list_documents()
+        return {"status": "ok", "data": result}
+    except Exception as exc:
+        logger.warning("Document list error: %s", exc)
+        return {"status": "degraded", "data": {}, "detail": str(exc)}
+
+
+@app.post("/api/documents/query")
+async def query_documents(req: DocumentQueryRequest) -> Dict[str, Any]:
+    """Semantic search over stored documents."""
+    active_bot = get_bot()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="query must not be empty")
+    try:
+        result = active_bot.client.query_documents(query=req.query, top_k=req.top_k)
+        return {"status": "ok", "data": result}
+    except Exception as exc:
+        logger.warning("Document query error: %s", exc)
+        return {"status": "degraded", "data": {}, "detail": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# Static files + index
+# ---------------------------------------------------------------------------
+
 # Mount static directory if present
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -252,3 +382,4 @@ async def serve_index() -> FileResponse:
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="Frontend index.html not found. Please build frontend first.")
     return FileResponse(str(index_path))
+

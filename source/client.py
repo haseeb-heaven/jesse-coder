@@ -2,12 +2,14 @@
 Jesse API Client Module.
 Provides low-level interaction with Jesse's OpenAI-compatible API,
 including robust try/catch error handling, token streaming, and session management.
+Also exposes non-chat Jesse REST endpoints: feedback, memory, and documents.
 """
 
 from __future__ import annotations
 
 import logging
 from typing import Any, Dict, Iterator, List, Optional
+import httpx
 import openai
 from openai import OpenAI
 
@@ -47,11 +49,22 @@ class JesseClient:
         self.config = config or JesseConfig()
         self.config.validate()
 
+        # Root URL without trailing slash, used by REST helpers
+        self._base_url = self.config.base_url.rstrip('/')
+        self._api_key = self.config.api_key
+
         self._client = OpenAI(
             base_url=self.config.base_url,
             api_key=self.config.api_key,
             timeout=self.config.timeout,
             max_retries=self.config.max_retries,
+        )
+
+        # Shared httpx client for non-chat REST endpoints
+        self._http = httpx.Client(
+            base_url=self._base_url,
+            headers={"Authorization": f"Bearer {self._api_key}"},
+            timeout=30.0,
         )
 
     def _map_openai_error(self, err: Exception) -> JesseBotError:
@@ -204,12 +217,114 @@ class JesseClient:
         except Exception as e:
             raise self._map_openai_error(e) from e
 
+    # ------------------------------------------------------------------
+    # Jesse REST API helpers (non-chat endpoints)
+    # ------------------------------------------------------------------
+
+    def submit_feedback(
+        self,
+        message_id: str,
+        rating: str,
+        correction: Optional[str] = None,
+        model: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """POST /feedback — Mark an answer right (👍) or wrong (👎), with an optional correction.
+
+        Args:
+            message_id: Identifier for the assistant message being rated.
+            rating:     'thumbs_up' or 'thumbs_down'.
+            correction: Optional corrected answer text for learning.
+            model:      Model that produced the answer (defaults to config.model).
+        """
+        payload: Dict[str, Any] = {
+            "message_id": message_id,
+            "rating": rating,
+            "model": model or self.config.model,
+        }
+        if correction and correction.strip():
+            payload["correction"] = correction.strip()
+        try:
+            resp = self._http.post("/feedback", json=payload)
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise JesseBotError(f"Feedback submission failed ({e.response.status_code}): {e.response.text}") from e
+        except Exception as e:
+            raise JesseBotError(f"Feedback request error: {e}") from e
+
+    def get_memory(self) -> Dict[str, Any]:
+        """GET /memory — Retrieve facts Jesse remembers for this API key."""
+        try:
+            resp = self._http.get("/memory")
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise JesseBotError(f"Memory fetch failed ({e.response.status_code}): {e.response.text}") from e
+        except Exception as e:
+            raise JesseBotError(f"Memory request error: {e}") from e
+
+    def delete_memory(self) -> Dict[str, Any]:
+        """DELETE /memory — Erase everything Jesse remembers for this API key."""
+        try:
+            resp = self._http.delete("/memory")
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise JesseBotError(f"Memory delete failed ({e.response.status_code}): {e.response.text}") from e
+        except Exception as e:
+            raise JesseBotError(f"Memory delete error: {e}") from e
+
+    def store_document(
+        self,
+        title: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """POST /documents — Store a document for retrieval in later requests."""
+        payload: Dict[str, Any] = {"title": title, "content": content}
+        if metadata:
+            payload["metadata"] = metadata
+        try:
+            resp = self._http.post("/documents", json=payload)
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise JesseBotError(f"Document store failed ({e.response.status_code}): {e.response.text}") from e
+        except Exception as e:
+            raise JesseBotError(f"Document store error: {e}") from e
+
+    def list_documents(self) -> Dict[str, Any]:
+        """GET /documents — List stored documents for this API key."""
+        try:
+            resp = self._http.get("/documents")
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise JesseBotError(f"Document list failed ({e.response.status_code}): {e.response.text}") from e
+        except Exception as e:
+            raise JesseBotError(f"Document list error: {e}") from e
+
+    def query_documents(self, query: str, top_k: int = 5) -> Dict[str, Any]:
+        """POST /documents/query — Semantic search over stored documents."""
+        try:
+            resp = self._http.post("/documents/query", json={"query": query, "top_k": top_k})
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise JesseBotError(f"Document query failed ({e.response.status_code}): {e.response.text}") from e
+        except Exception as e:
+            raise JesseBotError(f"Document query error: {e}") from e
+
     def close(self) -> None:
         """Close underlying HTTP client connections."""
         try:
             self._client.close()
         except Exception as e:
-            logger.warning(f"Error while closing JesseClient: {e}")
+            logger.warning(f"Error while closing JesseClient OpenAI client: {e}")
+        try:
+            self._http.close()
+        except Exception as e:
+            logger.warning(f"Error while closing JesseClient httpx client: {e}")
 
     def __enter__(self) -> JesseClient:
         return self

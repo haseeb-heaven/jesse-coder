@@ -77,3 +77,70 @@ export interface AutoRepairAttempt {
   language: string;
   diagnostic: string;
 }
+
+// ---------------------------------------------------------------------------
+// Feedback (jesse-prod learning)
+// ---------------------------------------------------------------------------
+
+export type FeedbackRating = 'thumbs_up' | 'thumbs_down';
+
+export interface FeedbackRequest {
+  message_id: string;
+  rating: FeedbackRating;
+  correction?: string;
+  model?: string;
+}
+
+export interface FeedbackResponse {
+  status: string;
+  detail: unknown;
+}
+
+// ---------------------------------------------------------------------------
+// Memory
+// ---------------------------------------------------------------------------
+
+export interface MemoryFact {
+  key?: string;
+  value?: string;
+  fact?: string;
+  [key: string]: unknown;
+}
+
+export interface MemoryResponse {
+  status: string;
+  data: unknown;
+  detail?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+
+export interface JesseDocument {
+  id?: string;
+  title: string;
+  content?: string;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+export interface DocumentListResponse {
+  status: string;
+  data: unknown;
+  detail?: string;
+}
+
+export interface DocumentQueryResult {
+  id?: string;
+  title?: string;
+  content?: string;
+  score?: number;
+  [key: string]: unknown;
+}
+
+export interface DocumentQueryResponse {
+  status: string;
+  data: unknown;
+  detail?: string;
+}

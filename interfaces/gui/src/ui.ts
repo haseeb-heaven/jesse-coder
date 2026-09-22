@@ -604,4 +604,215 @@ export class UIController {
   private scrollToBottom(): void {
     this.dialogueEl.scrollTop = this.dialogueEl.scrollHeight;
   }
+
+  // --------------------------------------------------------------------------
+  // Feedback buttons — injected into assistant message bubbles after finalize
+  // --------------------------------------------------------------------------
+
+  /**
+   * Adds 👍/👎 feedback buttons to a finalized assistant message bubble.
+   * Returns the message element ID so the caller can track which message is rated.
+   */
+  public addFeedbackButtons(msgEl: HTMLElement, onThumbsUp: () => void, onThumbsDown: () => void): void {
+    // Avoid duplicate buttons
+    if (msgEl.querySelector('.feedback-actions')) return;
+
+    const actionsBar = document.createElement('div');
+    actionsBar.className = 'feedback-actions flex items-center gap-2 mt-2 ml-1';
+    actionsBar.innerHTML = `
+      <span class="text-[10px] font-mono text-slate-400 dark:text-slate-600">Was this helpful?</span>
+      <button class="btn-thumbs-up px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 hover:bg-emerald-200 dark:hover:bg-emerald-900 border border-emerald-300 dark:border-emerald-700/60 text-emerald-700 dark:text-emerald-400 text-[11px] font-mono transition" title="Good answer — teach jesse-prod">👍</button>
+      <button class="btn-thumbs-down px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 hover:bg-rose-200 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-700/60 text-rose-700 dark:text-rose-400 text-[11px] font-mono transition" title="Wrong answer — correct jesse-prod">👎</button>
+    `;
+
+    const thumbsUp = actionsBar.querySelector('.btn-thumbs-up') as HTMLButtonElement;
+    const thumbsDown = actionsBar.querySelector('.btn-thumbs-down') as HTMLButtonElement;
+
+    thumbsUp.addEventListener('click', () => {
+      thumbsUp.textContent = '✓ Thanks!';
+      thumbsUp.disabled = true;
+      thumbsDown.disabled = true;
+      onThumbsUp();
+    });
+
+    thumbsDown.addEventListener('click', () => {
+      thumbsDown.textContent = '→ Correcting...';
+      thumbsDown.disabled = true;
+      thumbsUp.disabled = true;
+      onThumbsDown();
+    });
+
+    // Append after the bubble div
+    const bubble = msgEl.closest('.assistant-turn') as HTMLElement;
+    if (bubble) {
+      bubble.appendChild(actionsBar);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Feedback Correction Modal
+  // --------------------------------------------------------------------------
+
+  public showFeedbackModal(onSubmit: (correction: string) => void, onCancel: () => void): void {
+    const modal = document.getElementById('feedback-modal') as HTMLElement;
+    const input = document.getElementById('feedback-correction-input') as HTMLTextAreaElement;
+    const btnSubmit = document.getElementById('btn-feedback-submit') as HTMLButtonElement;
+    const btnCancel = document.getElementById('btn-feedback-cancel') as HTMLButtonElement;
+    const btnClose = document.getElementById('btn-close-feedback') as HTMLButtonElement;
+
+    input.value = '';
+    modal.classList.remove('hidden');
+    input.focus();
+
+    const doSubmit = () => {
+      const correction = input.value.trim();
+      modal.classList.add('hidden');
+      cleanup();
+      onSubmit(correction);
+    };
+
+    const doCancel = () => {
+      modal.classList.add('hidden');
+      cleanup();
+      onCancel();
+    };
+
+    const cleanup = () => {
+      btnSubmit.removeEventListener('click', doSubmit);
+      btnCancel.removeEventListener('click', doCancel);
+      btnClose.removeEventListener('click', doCancel);
+    };
+
+    btnSubmit.addEventListener('click', doSubmit);
+    btnCancel.addEventListener('click', doCancel);
+    btnClose.addEventListener('click', doCancel);
+  }
+
+  // --------------------------------------------------------------------------
+  // Memory Panel
+  // --------------------------------------------------------------------------
+
+  public showMemoryPanel(): void {
+    const modal = document.getElementById('memory-modal') as HTMLElement;
+    modal.classList.remove('hidden');
+  }
+
+  public hideMemoryPanel(): void {
+    const modal = document.getElementById('memory-modal') as HTMLElement;
+    modal.classList.add('hidden');
+  }
+
+  public renderMemoryContent(data: unknown, isError: boolean = false): void {
+    const el = document.getElementById('memory-content') as HTMLElement;
+    if (isError) {
+      el.innerHTML = `<span class="text-rose-400">⚠️ ${escapeHtml(String(data))}</span>`;
+      return;
+    }
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      el.innerHTML = '<span class="text-slate-400 italic">No memory stored yet.</span>';
+      return;
+    }
+    // Pretty-print JSON, or render as a list if it's an array
+    if (Array.isArray(data)) {
+      const items = (data as Record<string, unknown>[]).map((fact, i) => {
+        const text = fact.value ?? fact.fact ?? fact.content ?? JSON.stringify(fact);
+        return `<div class="flex gap-2 py-1 border-b border-slate-100 dark:border-slate-800">
+          <span class="text-violet-400 shrink-0">${i + 1}.</span>
+          <span class="text-slate-700 dark:text-slate-300">${escapeHtml(String(text))}</span>
+        </div>`;
+      }).join('');
+      el.innerHTML = items || '<span class="text-slate-400 italic">No memory stored yet.</span>';
+    } else {
+      el.textContent = JSON.stringify(data, null, 2);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Documents Panel
+  // --------------------------------------------------------------------------
+
+  public showDocsPanel(activeTab: string = 'store'): void {
+    const modal = document.getElementById('docs-modal') as HTMLElement;
+    modal.classList.remove('hidden');
+    this.switchDocsTab(activeTab);
+  }
+
+  public hideDocsPanel(): void {
+    const modal = document.getElementById('docs-modal') as HTMLElement;
+    modal.classList.add('hidden');
+  }
+
+  public switchDocsTab(tabName: string): void {
+    // Update tab button styles
+    document.querySelectorAll('.docs-tab').forEach((btn) => {
+      const b = btn as HTMLButtonElement;
+      const isActive = b.getAttribute('data-docs-tab') === tabName;
+      b.className = isActive
+        ? 'docs-tab px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 transition'
+        : 'docs-tab px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition';
+    });
+    // Show/hide panels
+    document.querySelectorAll('.docs-tab-panel').forEach((panel) => {
+      (panel as HTMLElement).classList.add('hidden');
+    });
+    const active = document.getElementById(`docs-tab-${tabName}`);
+    if (active) {
+      active.classList.remove('hidden');
+      active.classList.add('flex-1', 'overflow-auto');
+    }
+  }
+
+  public renderDocsList(data: unknown, isError: boolean = false): void {
+    const el = document.getElementById('docs-list-content') as HTMLElement;
+    if (isError) {
+      el.innerHTML = `<span class="text-rose-400">⚠️ ${escapeHtml(String(data))}</span>`;
+      return;
+    }
+    const docs = Array.isArray(data) ? data : ((data as Record<string, unknown>)?.documents ?? (data as Record<string, unknown>)?.data ?? []);
+    if (!Array.isArray(docs) || docs.length === 0) {
+      el.innerHTML = '<span class="text-slate-400 italic">No documents stored yet.</span>';
+      return;
+    }
+    el.innerHTML = (docs as Record<string, unknown>[]).map((doc) => `
+      <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div class="font-bold text-emerald-600 dark:text-emerald-400">${escapeHtml(String(doc.title ?? '(untitled)'))}</div>
+        ${doc.id ? `<div class="text-slate-400 text-[10px] mt-0.5">ID: ${escapeHtml(String(doc.id))}</div>` : ''}
+        ${doc.created_at ? `<div class="text-slate-400 text-[10px]">${escapeHtml(String(doc.created_at))}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  public renderDocSearchResults(data: unknown, isError: boolean = false): void {
+    const el = document.getElementById('doc-search-results') as HTMLElement;
+    if (isError) {
+      el.innerHTML = `<span class="text-rose-400">⚠️ ${escapeHtml(String(data))}</span>`;
+      return;
+    }
+    const results = Array.isArray(data) ? data : ((data as Record<string, unknown>)?.results ?? (data as Record<string, unknown>)?.data ?? []);
+    if (!Array.isArray(results) || results.length === 0) {
+      el.innerHTML = '<span class="text-slate-400 italic">No matching documents found.</span>';
+      return;
+    }
+    el.innerHTML = (results as Record<string, unknown>[]).map((r, i) => `
+      <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-emerald-900/40">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-bold text-emerald-600 dark:text-emerald-400">${i + 1}. ${escapeHtml(String(r.title ?? '(untitled)'))}</span>
+          ${r.score !== undefined ? `<span class="text-[10px] text-slate-400 font-mono">score: ${Number(r.score).toFixed(3)}</span>` : ''}
+        </div>
+        ${r.content ? `<p class="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed line-clamp-3">${escapeHtml(String(r.content).slice(0, 300))}${String(r.content).length > 300 ? '...' : ''}</p>` : ''}
+      </div>
+    `).join('');
+  }
+
+  public showDocStoreResult(message: string, isError: boolean = false): void {
+    const el = document.getElementById('doc-store-result') as HTMLElement;
+    el.classList.remove('hidden');
+    el.className = `mt-2 p-3 rounded-lg border text-xs font-mono ${
+      isError
+        ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300'
+        : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300'
+    }`;
+    el.textContent = message;
+    setTimeout(() => el.classList.add('hidden'), 4000);
+  }
 }
