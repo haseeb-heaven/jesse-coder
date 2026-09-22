@@ -1,4 +1,6 @@
-# Environment Variables & Secrets (NEVER COMMIT)
+# ==============================================================================
+# Environment Variables & Secrets (CRITICAL - NEVER COMMIT)
+# ==============================================================================
 .env
 .env.*
 .env.local
@@ -6,17 +8,44 @@
 .env.test.local
 .env.production.local
 !.env.example
+*.env
 *.pem
 *.key
+*.pkcs12
+*.pfx
+*.p12
 *.cert
+*.crt
 *.secret
+*.secrets
+secrets/
+.secrets/
 
-# Python Bytecode & Environments
+# ==============================================================================
+# Python Bytecode, Caches & Virtual Environments
+# ==============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+*.pyre/
+.dmypy.json
+dmypy.json
+
+# Virtual Environments
 env/
 venv/
 .venv/
@@ -24,7 +53,7 @@ ENV/
 env.bak/
 venv.bak/
 
-# Distribution & Build
+# Packaging & Builds
 build/
 develop-eggs/
 dist/
@@ -43,40 +72,67 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Testing & Code Quality
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.nox/
-nosetests.xml
-coverage.xml
-*.cover
-*.pyre/
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# ==============================================================================
+# JavaScript, TypeScript & Node.js Caches & Dependencies
+# ==============================================================================
+node_modules/
+web/node_modules/
+.npm/
+.yarn/
+.yarn-cache/
+.pnpm-store/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist
+.turbo/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
 
-# Local Databases & State
+# Node logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================================================================
+# C++ & Compiled Binary Artifacts
+# ==============================================================================
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.bin
+*.out
+*.exe
+*.a
+*.lib
+
+# ==============================================================================
+# Databases, SQLite & Local Runtime State
+# ==============================================================================
 *.db
 *.sqlite
 *.sqlite3
 *.db-journal
+*.db-wal
+*.db-shm
 
-# Logs & Process Artifacts
+# ==============================================================================
+# Process Logs & Temporary Files
+# ==============================================================================
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+tmp/
+temp/
+*.tmp
+*.temp
 
-# Node / Web Frontend
-node_modules/
-npm-debug.log
-yarn.lock
-package-lock.json
-
-# macOS & OS Metadata
+# ==============================================================================
+# Operating System Metadata
+# ==============================================================================
 .DS_Store
 .DS_Store?
 ._*
@@ -87,10 +143,13 @@ Thumbs.db
 .AppleDouble
 .LSOverride
 
-# IDEs & Editors
+# ==============================================================================
+# IDEs & Editor Configuration
+# ==============================================================================
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 *.sublime-project
 *.sublime-workspace
