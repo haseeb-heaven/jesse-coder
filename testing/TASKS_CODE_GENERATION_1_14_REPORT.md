@@ -7,24 +7,24 @@
 - **Pass Rate**: 14.3%
 - **Output Matching**: tolerant (value labels & line breaks ignored; values and their order must match)
 - **Passed via Equivalent Output**: 1 (values match in order; labels/line breaks differ)
-- **Timestamp**: 2026-09-22 10:45:40
+- **Timestamp**: 2026-09-22 11:18:29
 
 ## Summary Table
 
 | Task ID | Title | Language | Status | Execution Time | Notes |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| `task_01` | Circular Queue | `python` | ❌ FAIL | 50.1ms | Output mismatch. |
-| `task_02` | LRU Cache | `python` | ✅ PASS | 61.8ms | Matches expected output |
-| `task_03` | Sliding Window Rate Limiter | `python` | ❌ FAIL | 64.1ms | Output mismatch. |
-| `task_04` | Shortest Path | `python` | ✅ PASS | 63.6ms | Equivalent output (labels/format ignored) |
-| `task_05` | Inventory Transaction | `python` | ❌ FAIL | 61.3ms | Output mismatch. |
-| `task_06` | Payment Aggregation | `python` | ❌ FAIL | 60.6ms | Output mismatch. |
-| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | 78.4ms | Output mismatch. |
-| `task_08` | Binary Search Tree | `python` | ❌ FAIL | 63.5ms | Output mismatch. |
-| `task_09` | Dependency Build Order | `python` | ❌ FAIL | 62.8ms | Output mismatch. |
-| `task_10` | Video Watch Time | `python` | ❌ FAIL | 62.8ms | Output mismatch. |
+| `task_01` | Circular Queue | `python` | ❌ FAIL | 74.8ms | Output mismatch. |
+| `task_02` | LRU Cache | `python` | ✅ PASS | 42.5ms | Matches expected output |
+| `task_03` | Sliding Window Rate Limiter | `python` | ❌ FAIL | 58.7ms | Output mismatch. |
+| `task_04` | Shortest Path | `python` | ✅ PASS | 65.2ms | Equivalent output (labels/format ignored) |
+| `task_05` | Inventory Transaction | `python` | ❌ FAIL | 61.6ms | Output mismatch. |
+| `task_06` | Payment Aggregation | `python` | ❌ FAIL | 60.8ms | Output mismatch. |
+| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | 62.3ms | Output mismatch. |
+| `task_08` | Binary Search Tree | `python` | ❌ FAIL | 62.0ms | Output mismatch. |
+| `task_09` | Dependency Build Order | `python` | ❌ FAIL | 45.8ms | Output mismatch. |
+| `task_10` | Video Watch Time | `python` | ❌ FAIL | 56.3ms | Output mismatch. |
 | `task_11` | Weighted Job Scheduling | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
-| `task_12` | Dynamic Connectivity | `python` | ❌ FAIL | 60.0ms | Output mismatch. |
+| `task_12` | Dynamic Connectivity | `python` | ❌ FAIL | 56.0ms | Output mismatch. |
 | `task_13` | Event Stream Deduplication | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
 | `task_14` | Limit Order Matching Engine | `python` | ❌ FAIL | 0.0ms | No valid code block extracted from model response. |
 
