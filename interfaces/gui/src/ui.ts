@@ -17,6 +17,11 @@ export class UIController {
   private promptInputEl: HTMLTextAreaElement;
   private btnSendEl: HTMLButtonElement;
   private autoRunToggleEl: HTMLInputElement;
+  private autoRepairToggleEl: HTMLInputElement;
+  private retriesSelectEl: HTMLSelectElement;
+  private themeToggleBtnEl: HTMLButtonElement;
+  private themeSunIconEl: HTMLElement;
+  private themeMoonIconEl: HTMLElement;
   private rawToggleBtnEl: HTMLButtonElement;
   private btnResetEl: HTMLButtonElement;
   private modelSelectEl: HTMLSelectElement;
@@ -53,14 +58,19 @@ export class UIController {
   private btnCopyRawEl: HTMLButtonElement;
 
   constructor() {
-    this.dialogueEl        = document.getElementById('dialogue-stream') as HTMLElement;
-    this.promptInputEl     = document.getElementById('prompt-input') as HTMLTextAreaElement;
-    this.btnSendEl         = document.getElementById('btn-send') as HTMLButtonElement;
-    this.autoRunToggleEl   = document.getElementById('auto-run-toggle') as HTMLInputElement;
-    this.rawToggleBtnEl    = document.getElementById('btn-toggle-raw') as HTMLButtonElement;
-    this.btnResetEl        = document.getElementById('btn-reset') as HTMLButtonElement;
-    this.modelSelectEl     = document.getElementById('model-select') as HTMLSelectElement;
-    this.statusBadgeEl     = document.getElementById('status-badge') as HTMLElement;
+    this.dialogueEl         = document.getElementById('dialogue-stream') as HTMLElement;
+    this.promptInputEl      = document.getElementById('prompt-input') as HTMLTextAreaElement;
+    this.btnSendEl          = document.getElementById('btn-send') as HTMLButtonElement;
+    this.autoRunToggleEl    = document.getElementById('auto-run-toggle') as HTMLInputElement;
+    this.autoRepairToggleEl = document.getElementById('auto-repair-toggle') as HTMLInputElement;
+    this.retriesSelectEl    = document.getElementById('retries-select') as HTMLSelectElement;
+    this.themeToggleBtnEl   = document.getElementById('btn-theme-toggle') as HTMLButtonElement;
+    this.themeSunIconEl     = document.getElementById('theme-sun-icon') as HTMLElement;
+    this.themeMoonIconEl    = document.getElementById('theme-moon-icon') as HTMLElement;
+    this.rawToggleBtnEl     = document.getElementById('btn-toggle-raw') as HTMLButtonElement;
+    this.btnResetEl         = document.getElementById('btn-reset') as HTMLButtonElement;
+    this.modelSelectEl      = document.getElementById('model-select') as HTMLSelectElement;
+    this.statusBadgeEl      = document.getElementById('status-badge') as HTMLElement;
 
     this.langSelectEl         = document.getElementById('lang-select') as HTMLSelectElement;
     this.blockLangOverrideEl  = document.getElementById('block-lang-override') as HTMLSelectElement;
@@ -89,6 +99,7 @@ export class UIController {
     this.btnCopyRawEl       = document.getElementById('btn-copy-raw') as HTMLButtonElement;
 
     this.initEventListeners();
+    this.initTheme();
   }
 
   private initEventListeners(): void {
@@ -96,6 +107,11 @@ export class UIController {
     this.promptInputEl.addEventListener('input', () => {
       this.promptInputEl.style.height = 'auto';
       this.promptInputEl.style.height = `${Math.min(this.promptInputEl.scrollHeight, 200)}px`;
+    });
+
+    // Theme toggle button
+    this.themeToggleBtnEl?.addEventListener('click', () => {
+      this.toggleTheme();
     });
 
     // Clear console button
@@ -164,6 +180,98 @@ export class UIController {
     });
   }
 
+  // --- Theme Management ---
+
+  public getTheme(): 'dark' | 'light' {
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  }
+
+  public setTheme(theme: 'dark' | 'light'): void {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      this.themeSunIconEl?.classList.remove('hidden');
+      this.themeMoonIconEl?.classList.add('hidden');
+    } else {
+      document.documentElement.classList.remove('dark');
+      this.themeSunIconEl?.classList.add('hidden');
+      this.themeMoonIconEl?.classList.remove('hidden');
+    }
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // localStorage may fail in some environments
+    }
+  }
+
+  public toggleTheme(): void {
+    const nextTheme = this.getTheme() === 'dark' ? 'light' : 'dark';
+    this.setTheme(nextTheme);
+    this.showToast(`Switched to ${nextTheme === 'dark' ? 'Dark' : 'Light'} theme`);
+  }
+
+  public initTheme(): void {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem('theme');
+    } catch {
+      saved = null;
+    }
+
+    if (saved === 'light' || saved === 'dark') {
+      this.setTheme(saved as 'dark' | 'light');
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      this.setTheme('light');
+    } else {
+      this.setTheme('dark');
+    }
+  }
+
+  // --- Auto-Repair & Retries ---
+
+  public isAutoRepairEnabled(): boolean {
+    return this.autoRepairToggleEl ? this.autoRepairToggleEl.checked : false;
+  }
+
+  public getMaxRetries(): number {
+    const val = this.retriesSelectEl ? parseInt(this.retriesSelectEl.value, 10) : 3;
+    return isNaN(val) ? 3 : Math.max(1, Math.min(val, 10));
+  }
+
+  public appendRepairMessage(attempt: number, maxRetries: number, reason: string): { msgId: string; contentEl: HTMLElement } {
+    const msgId = `msg-repair-${Date.now()}`;
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const div = document.createElement('div');
+    div.id = msgId;
+    div.className = 'chat-turn repair-turn flex flex-col items-start my-4 animate-fadeIn';
+    div.innerHTML = `
+      <div class="flex items-center gap-2 mb-1 text-xs text-amber-500 font-mono">
+        <span class="flex items-center gap-1.5 font-bold">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+          Auto-Repair (Attempt ${attempt}/${maxRetries})
+        </span>
+        <span>•</span>
+        <span>${timeStr}</span>
+      </div>
+      <div class="repair-bubble w-full max-w-3xl px-5 py-4 rounded-2xl bg-amber-950/40 dark:bg-amber-950/40 border border-amber-600/60 dark:border-amber-600/60 text-slate-800 dark:text-slate-200 text-sm md:text-base shadow-xl backdrop-blur-md">
+        <div class="mb-2 text-xs font-mono text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <span class="truncate">Diagnosing error: ${escapeHtml(reason)}</span>
+        </div>
+        <div class="markdown-body leading-relaxed">
+          <span class="streaming-cursor inline-block w-2 h-4 bg-amber-500 dark:bg-amber-400 animate-pulse align-middle"></span>
+        </div>
+      </div>
+    `;
+    this.dialogueEl.appendChild(div);
+    this.scrollToBottom();
+    const contentEl = div.querySelector('.markdown-body') as HTMLElement;
+    return { msgId, contentEl };
+  }
+
+  // --- Input & General Controls ---
+
   public getPrompt(): string {
     return this.promptInputEl.value.trim();
   }
@@ -190,7 +298,7 @@ export class UIController {
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
         </svg>
-        <span>Streaming...</span>
+        <span>Processing...</span>
       `;
     }
   }
@@ -223,7 +331,7 @@ export class UIController {
     div.id = msgId;
     div.className = 'chat-turn user-turn flex flex-col items-end my-4 animate-fadeIn';
     div.innerHTML = `
-      <div class="flex items-center gap-2 mb-1 text-xs text-slate-400 font-mono">
+      <div class="flex items-center gap-2 mb-1 text-xs text-slate-500 dark:text-slate-400 font-mono">
         <span>You</span>
         <span>•</span>
         <span>${timeStr}</span>
@@ -244,17 +352,17 @@ export class UIController {
     div.id = msgId;
     div.className = 'chat-turn assistant-turn flex flex-col items-start my-4 animate-fadeIn';
     div.innerHTML = `
-      <div class="flex items-center gap-2 mb-1 text-xs text-cyan-400 font-mono">
+      <div class="flex items-center gap-2 mb-1 text-xs text-cyan-600 dark:text-cyan-400 font-mono">
         <span class="flex items-center gap-1.5 font-bold">
-          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="w-2 h-2 rounded-full bg-cyan-500 dark:bg-cyan-400 animate-ping"></span>
           JesseCoder
         </span>
         <span>•</span>
         <span>${timeStr}</span>
       </div>
-      <div class="assistant-bubble w-full max-w-3xl px-5 py-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-slate-200 text-sm md:text-base shadow-xl backdrop-blur-md">
+      <div class="assistant-bubble w-full max-w-3xl px-5 py-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-slate-800 dark:text-slate-200 text-sm md:text-base shadow-xl backdrop-blur-md">
         <div class="markdown-body leading-relaxed">
-          <span class="streaming-cursor inline-block w-2 h-4 bg-cyan-400 animate-pulse align-middle"></span>
+          <span class="streaming-cursor inline-block w-2 h-4 bg-cyan-500 dark:bg-cyan-400 animate-pulse align-middle"></span>
         </div>
       </div>
     `;
@@ -265,7 +373,7 @@ export class UIController {
   }
 
   public updateAssistantStream(contentEl: HTMLElement, text: string): void {
-    contentEl.innerHTML = renderMarkdown(text) + '<span class="streaming-cursor inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-1 align-middle"></span>';
+    contentEl.innerHTML = renderMarkdown(text) + '<span class="streaming-cursor inline-block w-2 h-4 bg-cyan-500 dark:bg-cyan-400 animate-pulse ml-1 align-middle"></span>';
     this.scrollToBottom();
   }
 
@@ -403,9 +511,9 @@ export class UIController {
   }
 
   public clearConsole(): void {
-    this.consoleOutputEl.innerHTML = '<span class="text-slate-600 font-mono text-xs italic">Console ready. Click [Run] or enable Auto-Run.</span>';
+    this.consoleOutputEl.innerHTML = '<span class="text-slate-400 dark:text-slate-600 font-mono text-xs italic">Console ready. Click [Run] or enable Auto-Run.</span>';
     this.execStatusBadgeEl.textContent = 'IDLE';
-    this.execStatusBadgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700';
+    this.execStatusBadgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700';
     this.execTimeBadgeEl.classList.add('hidden');
     this.execCommandBadgeEl.classList.add('hidden');
   }
@@ -462,12 +570,12 @@ export class UIController {
   public clearDialogue(): void {
     this.dialogueEl.innerHTML = `
       <div id="welcome-message" class="text-center py-10 px-4">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-cyan-950/60 border border-cyan-800/80 mb-4 shadow-xl">
-          <span class="text-3xl text-cyan-400 font-mono">⚡</span>
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-cyan-100 dark:bg-cyan-950/60 border border-cyan-300 dark:border-cyan-800/80 mb-4 shadow-xl">
+          <span class="text-3xl text-cyan-600 dark:text-cyan-400 font-mono">⚡</span>
         </div>
-        <h2 class="text-xl font-bold text-slate-100 tracking-wide">JesseCoder Intelligence Console</h2>
-        <p class="text-sm text-slate-400 max-w-md mx-auto mt-2">
-          Real-time coding agent with isolated subprocess execution and live Jesse API streaming.
+        <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-wide">JesseCoder Intelligence Console</h2>
+        <p class="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto mt-2">
+          Real-time coding agent with isolated subprocess execution, self-healing retries, and live Jesse API streaming.
         </p>
       </div>
     `;

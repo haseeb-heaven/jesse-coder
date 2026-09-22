@@ -28,6 +28,8 @@ export interface ChatMessage {
   extractedCode?: ExtractedCode | null;
   executionResult?: ExecutionResult | null;
   rawResponse?: string;
+  repairAttempt?: number;
+  maxRetries?: number;
 }
 
 export interface StreamTokenEvent {
@@ -60,7 +62,18 @@ export interface HealthStatus {
 
 export interface AppSettings {
   autoRun: boolean;
+  autoRepair: boolean;
+  maxRetries: number;
   showRaw: boolean;
   model: string;
   temperature: number;
+  theme: 'dark' | 'light';
+}
+
+export interface AutoRepairAttempt {
+  attempt: number;
+  maxRetries: number;
+  failedCode: string;
+  language: string;
+  diagnostic: string;
 }

@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>JesseCoder — High-Performance Coding Agent</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <!-- Theme initialization script to prevent FOUC -->
+  <script>
+    (function() {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else if (stored === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -32,76 +47,106 @@
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="/static/style.css" />
 </head>
-<body class="h-full flex flex-col bg-[#080b12] text-slate-100 antialiased select-none">
+<body class="h-full flex flex-col bg-slate-50 dark:bg-[#080b12] text-slate-900 dark:text-slate-100 antialiased select-none transition-colors duration-200">
 
   <!-- Header Bar -->
-  <header class="h-14 border-b border-slate-800/80 bg-[#0d131f]/90 backdrop-blur px-4 md:px-6 flex items-center justify-between shrink-0 z-20 gap-3">
+  <header class="h-auto md:h-14 py-2 md:py-0 border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0d131f]/90 backdrop-blur px-3 md:px-6 flex items-center justify-between shrink-0 z-20 gap-2 flex-wrap sm:flex-nowrap">
     <!-- Brand -->
     <div class="flex items-center gap-3 shrink-0">
-      <div class="w-8 h-8 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold shadow-lg shadow-cyan-500/10 text-base">
+      <div class="w-8 h-8 rounded-xl bg-cyan-100 dark:bg-cyan-950/80 border border-cyan-300 dark:border-cyan-500/40 flex items-center justify-center text-cyan-600 dark:text-cyan-400 font-bold shadow-lg shadow-cyan-500/10 text-base">
         ⚡
       </div>
       <div class="hidden sm:block">
-        <h1 class="font-bold text-sm tracking-wider text-slate-100 uppercase">JesseCoder</h1>
+        <h1 class="font-bold text-sm tracking-wider text-slate-900 dark:text-slate-100 uppercase">JesseCoder</h1>
         <p class="text-[10px] text-slate-500 font-mono">Autonomous Code Generation &amp; Isolated Execution</p>
       </div>
     </div>
 
     <!-- Controls -->
-    <div class="flex items-center gap-2 flex-wrap justify-end">
+    <div class="flex items-center gap-1.5 md:gap-2 flex-wrap justify-end">
 
       <!-- Status Badge -->
-      <div id="status-badge" class="hidden md:flex items-center px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300 shrink-0">
+      <div id="status-badge" class="hidden xl:flex items-center px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-700 dark:text-slate-300 shrink-0">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
         <span>ONLINE: jesse-prod</span>
       </div>
 
       <!-- Model Selector -->
-      <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-2 py-1 rounded-lg shrink-0" title="Jesse API Model">
+      <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 px-2 py-1 rounded-lg shrink-0" title="Jesse API Model">
         <label for="model-select" class="text-[10px] text-slate-500 font-mono hidden sm:block">Model:</label>
-        <select id="model-select" class="bg-transparent text-xs font-mono text-cyan-300 focus:outline-none cursor-pointer">
-          <option value="jesse-prod" class="bg-slate-900 text-slate-200">jesse-prod</option>
-          <option value="jesse-pristine" class="bg-slate-900 text-slate-200">jesse-pristine</option>
-          <option value="jesse" class="bg-slate-900 text-slate-200">jesse</option>
+        <select id="model-select" class="bg-transparent text-xs font-mono text-cyan-600 dark:text-cyan-300 focus:outline-none cursor-pointer">
+          <option value="jesse-prod" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">jesse-prod</option>
+          <option value="jesse-pristine" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">jesse-pristine</option>
+          <option value="jesse" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">jesse</option>
         </select>
       </div>
 
-      <!-- ── NEW: Execution Language Picker ── -->
-      <div class="flex items-center gap-1.5 bg-slate-900/80 border border-cyan-900/60 px-2 py-1 rounded-lg shrink-0" title="Override execution language for Run Code">
-        <svg class="w-3 h-3 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Execution Language Picker -->
+      <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-cyan-900/60 px-2 py-1 rounded-lg shrink-0" title="Override execution language for Run Code">
+        <svg class="w-3 h-3 text-cyan-600 dark:text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3" />
         </svg>
         <label for="lang-select" class="text-[10px] text-slate-500 font-mono hidden sm:block">Lang:</label>
-        <select id="lang-select" class="bg-transparent text-xs font-mono text-cyan-300 focus:outline-none cursor-pointer">
-          <option value="auto"  class="bg-slate-900 text-slate-200">Auto-detect</option>
-          <option value="python"     class="bg-slate-900 text-slate-200">Python</option>
-          <option value="javascript" class="bg-slate-900 text-slate-200">JavaScript (Node)</option>
-          <option value="typescript" class="bg-slate-900 text-slate-200">TypeScript (tsx)</option>
-          <option value="bash"       class="bg-slate-900 text-slate-200">Bash / Shell</option>
-          <option value="ruby"       class="bg-slate-900 text-slate-200">Ruby</option>
-          <option value="php"        class="bg-slate-900 text-slate-200">PHP</option>
-          <option value="go"         class="bg-slate-900 text-slate-200">Go</option>
-          <option value="rust"       class="bg-slate-900 text-slate-200">Rust</option>
-          <option value="cpp"        class="bg-slate-900 text-slate-200">C++</option>
-          <option value="c"          class="bg-slate-900 text-slate-200">C</option>
-          <option value="java"       class="bg-slate-900 text-slate-200">Java</option>
-          <option value="swift"      class="bg-slate-900 text-slate-200">Swift</option>
-          <option value="kotlin"     class="bg-slate-900 text-slate-200">Kotlin</option>
-          <option value="r"          class="bg-slate-900 text-slate-200">R</option>
-          <option value="lua"        class="bg-slate-900 text-slate-200">Lua</option>
-          <option value="perl"       class="bg-slate-900 text-slate-200">Perl</option>
+        <select id="lang-select" class="bg-transparent text-xs font-mono text-cyan-600 dark:text-cyan-300 focus:outline-none cursor-pointer">
+          <option value="auto"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Auto-detect</option>
+          <option value="python"     class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Python</option>
+          <option value="javascript" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">JavaScript (Node)</option>
+          <option value="typescript" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">TypeScript (tsx)</option>
+          <option value="bash"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Bash / Shell</option>
+          <option value="ruby"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Ruby</option>
+          <option value="php"        class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">PHP</option>
+          <option value="go"         class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Go</option>
+          <option value="rust"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Rust</option>
+          <option value="cpp"        class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">C++</option>
+          <option value="c"          class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">C</option>
+          <option value="java"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Java</option>
+          <option value="swift"      class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Swift</option>
+          <option value="kotlin"     class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Kotlin</option>
+          <option value="r"          class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">R</option>
+          <option value="lua"        class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Lua</option>
+          <option value="perl"       class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">Perl</option>
         </select>
       </div>
 
       <!-- Auto-Run Toggle -->
-      <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 px-2.5 py-1 rounded-lg transition shrink-0">
+      <label class="flex items-center gap-1.5 cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/80 dark:hover:bg-slate-800/80 border border-slate-300 dark:border-slate-800 px-2 py-1 rounded-lg transition shrink-0" title="Automatically execute extracted code">
         <input type="checkbox" id="auto-run-toggle" class="sr-only peer" checked />
-        <div class="w-7 h-3.5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500 relative"></div>
-        <span class="text-xs font-mono text-slate-400 peer-checked:text-cyan-300">⚡ Auto-Run</span>
+        <div class="w-7 h-3.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500 relative"></div>
+        <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-cyan-600 dark:peer-checked:text-cyan-300">⚡ Auto-Run</span>
       </label>
 
+      <!-- Auto-Repair Toggle & Retries Selector -->
+      <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 px-2 py-1 rounded-lg shrink-0" title="Self-healing auto-repair: feed error diagnostics back to fix broken code">
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" id="auto-repair-toggle" class="sr-only peer" checked />
+          <div class="w-7 h-3.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500 relative"></div>
+          <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-amber-600 dark:peer-checked:text-amber-300 font-semibold">🛠️ Auto-Fix</span>
+        </label>
+        <span class="text-slate-300 dark:text-slate-700 text-[10px]">|</span>
+        <label for="retries-select" class="text-[10px] text-slate-500 font-mono hidden sm:inline" title="Maximum repair attempts">Max:</label>
+        <select id="retries-select" class="bg-transparent text-xs font-mono text-amber-600 dark:text-amber-300 focus:outline-none cursor-pointer" title="Max retries on error">
+          <option value="1" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">1</option>
+          <option value="2" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">2</option>
+          <option value="3" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200" selected>3</option>
+          <option value="4" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">4</option>
+          <option value="5" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">5</option>
+        </select>
+      </div>
+
+      <!-- Light / Dark Theme Toggle Button -->
+      <button id="btn-theme-toggle" class="flex items-center justify-center p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-300 transition shrink-0" title="Toggle Light / Dark Mode">
+        <!-- Sun icon (shown in dark mode) -->
+        <svg id="theme-sun-icon" class="w-4 h-4 hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        <!-- Moon icon (shown in light mode) -->
+        <svg id="theme-moon-icon" class="w-4 h-4 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      </button>
+
       <!-- RAW API Button -->
-      <button id="btn-toggle-raw" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-xs font-mono text-slate-300 hover:text-cyan-300 transition shrink-0" title="View raw Jesse API payload (Ctrl+R)">
+      <button id="btn-toggle-raw" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700/60 text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-300 transition shrink-0" title="View raw Jesse API payload (Ctrl+R)">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
         </svg>
@@ -109,7 +154,7 @@
       </button>
 
       <!-- Reset -->
-      <button id="btn-reset" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-800 text-xs font-mono text-slate-400 hover:text-rose-300 transition shrink-0" title="Clear conversation context">
+      <button id="btn-reset" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-100 dark:bg-slate-900 dark:hover:bg-rose-950/40 border border-slate-300 hover:border-rose-400 dark:border-slate-800 dark:hover:border-rose-800 text-xs font-mono text-slate-700 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-300 transition shrink-0" title="Clear conversation context">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
@@ -127,59 +172,59 @@
       <!-- Dialogue Stream -->
       <div id="dialogue-stream" class="flex-1 overflow-y-auto pr-2 space-y-3 select-text">
         <div id="welcome-message" class="text-center py-10 px-4">
-          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-cyan-950/60 border border-cyan-800/80 mb-4 shadow-xl">
-            <span class="text-3xl text-cyan-400 font-mono">⚡</span>
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-cyan-100 dark:bg-cyan-950/60 border border-cyan-300 dark:border-cyan-800/80 mb-4 shadow-xl">
+            <span class="text-3xl text-cyan-600 dark:text-cyan-400 font-mono">⚡</span>
           </div>
-          <h2 class="text-xl font-bold text-slate-100 tracking-wide">JesseCoder Intelligence Console</h2>
-          <p class="text-sm text-slate-400 max-w-md mx-auto mt-2">
-            Real-time coding agent with isolated subprocess execution and live Jesse API streaming.
+          <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-wide">JesseCoder Intelligence Console</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto mt-2">
+            Real-time coding agent with isolated subprocess execution, self-healing retries, and live Jesse API streaming.
           </p>
-          <div class="mt-4 flex flex-wrap justify-center gap-2 text-xs text-slate-500 font-mono">
-            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800">⌨️ Enter = Send</span>
-            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800">⇧Enter = Newline</span>
-            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800">Ctrl+E = Run Code</span>
-            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800">Ctrl+R = RAW View</span>
+          <div class="mt-4 flex flex-wrap justify-center gap-2 text-xs text-slate-600 dark:text-slate-500 font-mono">
+            <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800">⌨️ Enter = Send</span>
+            <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800">⇧Enter = Newline</span>
+            <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800">Ctrl+E = Run Code</span>
+            <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800">Ctrl+R = RAW View</span>
           </div>
         </div>
       </div>
 
       <!-- Quick Prompt Chips -->
-      <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto pb-1 text-xs shrink-0">
-        <span class="text-[10px] font-mono text-slate-600 uppercase shrink-0">Try:</span>
-        <button class="prompt-chip px-2 py-0.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
+      <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center gap-2 overflow-x-auto pb-1 text-xs shrink-0">
+        <span class="text-[10px] font-mono text-slate-400 dark:text-slate-600 uppercase shrink-0">Try:</span>
+        <button class="prompt-chip px-2 py-0.5 rounded-md bg-white dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
                 data-prompt="Write factorial of in given min and max ranges example 3 to 13 numbers range factorial">
           Factorial 3→13
         </button>
-        <button class="prompt-chip px-2 py-0.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
+        <button class="prompt-chip px-2 py-0.5 rounded-md bg-white dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
                 data-prompt="Write an optimized Quicksort in Python with randomized pivot and benchmark it">
           QuickSort Benchmark
         </button>
-        <button class="prompt-chip px-2 py-0.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
+        <button class="prompt-chip px-2 py-0.5 rounded-md bg-white dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
                 data-prompt="Find the issues in this code. Identify bugs.">
           Bug Review
         </button>
-        <button class="prompt-chip px-2 py-0.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
+        <button class="prompt-chip px-2 py-0.5 rounded-md bg-white dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
                 data-prompt="Write a Fibonacci generator using dynamic programming and yield in Python">
           Fibonacci DP
         </button>
-        <button class="prompt-chip px-2 py-0.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
+        <button class="prompt-chip px-2 py-0.5 rounded-md bg-white dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-300 font-mono text-[10px] shrink-0 transition"
                 data-prompt="Implement a binary search tree with insert, search, and in-order traversal in Python">
           BST (Python)
         </button>
       </div>
 
       <!-- Input Area -->
-      <div class="mt-2 relative bg-slate-950/90 rounded-xl border border-slate-800/90 focus-within:border-cyan-500/70 shadow-xl transition-all">
+      <div class="mt-2 relative bg-white dark:bg-slate-950/90 rounded-xl border border-slate-300 dark:border-slate-800/90 focus-within:border-cyan-500/70 shadow-lg dark:shadow-xl transition-all">
         <textarea
           id="prompt-input"
           rows="2"
           placeholder="Ask a coding question, paste code to review, or describe what to build..."
-          class="w-full bg-transparent p-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none resize-none font-sans leading-relaxed select-text"
+          class="w-full bg-transparent p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none resize-none font-sans leading-relaxed select-text"
         ></textarea>
-        <div class="flex items-center justify-between px-3 py-2 border-t border-slate-900/90">
-          <span class="text-[10px] font-mono text-slate-600">
-            <kbd class="px-1 py-0.5 rounded bg-slate-800 text-slate-500">Enter</kbd> send &nbsp;·&nbsp;
-            <kbd class="px-1 py-0.5 rounded bg-slate-800 text-slate-500">⇧Enter</kbd> newline
+        <div class="flex items-center justify-between px-3 py-2 border-t border-slate-100 dark:border-slate-900/90">
+          <span class="text-[10px] font-mono text-slate-500 dark:text-slate-600">
+            <kbd class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-500 border border-slate-300 dark:border-transparent">Enter</kbd> send &nbsp;·&nbsp;
+            <kbd class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-500 border border-slate-300 dark:border-transparent">⇧Enter</kbd> newline
           </span>
           <button
             id="btn-send"
@@ -200,36 +245,36 @@
       <!-- Code Workbench -->
       <div class="flex-1 flex flex-col rounded-2xl glass-panel overflow-hidden shadow-2xl">
         <!-- Header -->
-        <div class="px-3 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0 gap-2">
+        <div class="px-3 py-2 bg-slate-100 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 gap-2">
           <div class="flex items-center gap-2 min-w-0">
-            <span class="text-[11px] font-mono font-bold text-slate-300 uppercase shrink-0">Code</span>
-            <span id="code-lang-badge" class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 text-[10px] font-mono font-bold shrink-0">NONE</span>
-            <span id="code-line-count" class="text-[10px] font-mono text-slate-600 hidden sm:block">0 lines</span>
+            <span class="text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase shrink-0">Code</span>
+            <span id="code-lang-badge" class="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950 border border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 text-[10px] font-mono font-bold shrink-0">NONE</span>
+            <span id="code-line-count" class="text-[10px] font-mono text-slate-500 dark:text-slate-600 hidden sm:block">0 lines</span>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <!-- ── NEW: Per-block language override dropdown ── -->
-            <div class="flex items-center gap-1 bg-slate-800/70 border border-slate-700/60 px-1.5 py-0.5 rounded text-[10px] font-mono" title="Override language for this block">
+            <!-- Per-block language override dropdown -->
+            <div class="flex items-center gap-1 bg-white dark:bg-slate-800/70 border border-slate-300 dark:border-slate-700/60 px-1.5 py-0.5 rounded text-[10px] font-mono" title="Override language for this block">
               <svg class="w-2.5 h-2.5 text-cyan-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 9l3 3-3 3m5 0h3"/>
               </svg>
-              <select id="block-lang-override" class="bg-transparent text-slate-400 focus:outline-none cursor-pointer">
-                <option value="auto" class="bg-slate-900">auto</option>
-                <option value="python" class="bg-slate-900">python</option>
-                <option value="javascript" class="bg-slate-900">javascript</option>
-                <option value="typescript" class="bg-slate-900">typescript</option>
-                <option value="bash" class="bg-slate-900">bash</option>
-                <option value="ruby" class="bg-slate-900">ruby</option>
-                <option value="php" class="bg-slate-900">php</option>
-                <option value="go" class="bg-slate-900">go</option>
-                <option value="rust" class="bg-slate-900">rust</option>
-                <option value="cpp" class="bg-slate-900">cpp</option>
-                <option value="c" class="bg-slate-900">c</option>
-                <option value="java" class="bg-slate-900">java</option>
-                <option value="swift" class="bg-slate-900">swift</option>
-                <option value="r" class="bg-slate-900">r</option>
+              <select id="block-lang-override" class="bg-transparent text-slate-700 dark:text-slate-400 focus:outline-none cursor-pointer">
+                <option value="auto" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">auto</option>
+                <option value="python" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">python</option>
+                <option value="javascript" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">javascript</option>
+                <option value="typescript" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">typescript</option>
+                <option value="bash" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">bash</option>
+                <option value="ruby" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">ruby</option>
+                <option value="php" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">php</option>
+                <option value="go" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">go</option>
+                <option value="rust" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">rust</option>
+                <option value="cpp" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">cpp</option>
+                <option value="c" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">c</option>
+                <option value="java" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">java</option>
+                <option value="swift" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">swift</option>
+                <option value="r" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">r</option>
               </select>
             </div>
-            <button id="btn-copy-code" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 text-[10px] font-mono transition disabled:opacity-30" disabled>Copy</button>
+            <button id="btn-copy-code" class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-400 text-[10px] font-mono transition disabled:opacity-30" disabled>Copy</button>
             <button id="btn-run-code" class="flex items-center gap-1 px-2.5 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold text-[10px] shadow transition active:scale-95 disabled:opacity-30" disabled>
               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
@@ -240,7 +285,7 @@
         </div>
 
         <!-- Code Viewer -->
-        <div class="flex-1 p-3 overflow-auto bg-slate-950/80 font-mono text-xs text-slate-200 select-text leading-relaxed">
+        <div class="flex-1 p-3 overflow-auto bg-slate-950/90 font-mono text-xs text-slate-200 select-text leading-relaxed">
           <pre id="code-content" class="h-full whitespace-pre-wrap"># No code extracted yet.
 # Send a coding prompt to generate code here.</pre>
         </div>
@@ -248,20 +293,20 @@
 
       <!-- Execution Console -->
       <div class="flex-1 flex flex-col rounded-2xl glass-panel overflow-hidden shadow-2xl">
-        <div class="px-3 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div class="px-3 py-2 bg-slate-100 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2">
-            <span class="text-[11px] font-mono font-bold text-slate-300 uppercase">Console</span>
-            <span id="exec-status-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700">IDLE</span>
-            <span id="exec-time-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 text-cyan-300 border border-slate-700">0 ms</span>
+            <span class="text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase">Console</span>
+            <span id="exec-status-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">IDLE</span>
+            <span id="exec-time-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-slate-200 dark:bg-slate-800/80 text-cyan-600 dark:text-cyan-300 border border-slate-300 dark:border-slate-700">0 ms</span>
           </div>
           <div class="flex items-center gap-2">
-            <span id="exec-command-badge" class="hidden text-[10px] font-mono text-slate-600 truncate max-w-[100px]"></span>
-            <button id="btn-clear-console" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-200 text-[10px] font-mono transition">Clear</button>
+            <span id="exec-command-badge" class="hidden text-[10px] font-mono text-slate-500 dark:text-slate-600 truncate max-w-[100px]"></span>
+            <button id="btn-clear-console" class="px-2 py-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-[10px] font-mono transition">Clear</button>
           </div>
         </div>
         <div class="flex-1 p-3 overflow-auto console-screen font-mono text-xs text-slate-200 select-text">
           <div id="console-output" class="whitespace-pre-wrap leading-relaxed">
-            <span class="text-slate-600 italic">Console ready. Click [Run] or enable Auto-Run.</span>
+            <span class="text-slate-400 dark:text-slate-600 italic">Console ready. Click [Run] or enable Auto-Run.</span>
           </div>
         </div>
       </div>
@@ -269,23 +314,23 @@
     </section>
   </main>
 
-  <!-- RAW Jesse API Modal (cleaned up, canned responses filtered) -->
+  <!-- RAW Jesse API Modal -->
   <div id="raw-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 animate-fadeIn">
-    <div class="w-full max-w-4xl max-h-[85vh] rounded-2xl bg-slate-950 border border-cyan-800/60 shadow-2xl flex flex-col overflow-hidden">
+    <div class="w-full max-w-4xl max-h-[85vh] rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-cyan-800/60 shadow-2xl flex flex-col overflow-hidden">
 
       <!-- Modal Header -->
-      <div class="px-5 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
+      <div class="px-5 py-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
-          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 dark:bg-cyan-400 animate-pulse"></span>
           <div>
-            <h3 class="text-sm font-bold font-mono text-slate-200 uppercase tracking-wider">Jesse API — Raw Upstream Response</h3>
+            <h3 class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200 uppercase tracking-wider">Jesse API — Raw Upstream Response</h3>
             <p class="text-[10px] text-slate-500 font-mono mt-0.5">Unmodified payload from <span class="text-cyan-600">https://jesse.solidsf.com/api/v1</span></p>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <div id="raw-quality-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono border"></div>
-          <button id="btn-copy-raw" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition">Copy</button>
-          <button id="btn-close-raw" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition">
+          <button id="btn-copy-raw" class="px-3 py-1 rounded bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono transition">Copy</button>
+          <button id="btn-close-raw" class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -294,20 +339,20 @@
       </div>
 
       <!-- Warning banner for canned/garbage responses -->
-      <div id="raw-canned-warning" class="hidden px-5 py-2.5 bg-amber-950/60 border-b border-amber-800/60 flex items-start gap-3">
-        <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div id="raw-canned-warning" class="hidden px-5 py-2.5 bg-amber-500/10 dark:bg-amber-950/60 border-b border-amber-300 dark:border-amber-800/60 flex items-start gap-3">
+        <svg class="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <div>
-          <p class="text-xs font-mono font-bold text-amber-300">Demo Key Canned Response Detected</p>
-          <p class="text-[11px] text-amber-500 mt-0.5">The Jesse demo API key returned a benchmark/canned artifact unrelated to your prompt. JesseCoder's synthesizer intercepted this and generated the correct code for you. The raw payload below shows what the API actually returned.</p>
+          <p class="text-xs font-mono font-bold text-amber-700 dark:text-amber-300">Demo Key Canned Response Detected</p>
+          <p class="text-[11px] text-amber-600 dark:text-amber-500 mt-0.5">The Jesse demo API key returned a benchmark/canned artifact unrelated to your prompt. JesseCoder's synthesizer intercepted this and generated the correct code for you. The raw payload below shows what the API actually returned.</p>
         </div>
       </div>
 
       <!-- Raw Content -->
-      <div class="flex-1 p-5 overflow-auto bg-slate-950/90 select-text">
+      <div class="flex-1 p-5 overflow-auto bg-slate-900 dark:bg-slate-950/90 select-text">
         <!-- Stats bar -->
-        <div id="raw-stats-bar" class="hidden mb-3 flex items-center gap-4 text-[10px] font-mono text-slate-500 pb-3 border-b border-slate-800">
+        <div id="raw-stats-bar" class="hidden mb-3 flex items-center gap-4 text-[10px] font-mono text-slate-400 dark:text-slate-500 pb-3 border-b border-slate-800">
           <span id="raw-char-count"></span>
           <span id="raw-has-code"></span>
           <span id="raw-model-info"></span>

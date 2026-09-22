@@ -35,6 +35,40 @@ except ImportError:
 logger = logging.getLogger("jesse_coder.bot")
 
 
+def build_repair_prompt(
+    original_prompt: str,
+    failed_code: str,
+    language: str,
+    execution_result: ExecutionResult,
+    attempt: int = 1,
+    max_retries: int = 3,
+) -> str:
+    """Construct an error diagnosis and repair prompt for self-healing retries."""
+    diag_parts = []
+    if execution_result.exit_code is not None:
+        diag_parts.append(f"Exit Code: {execution_result.exit_code}")
+    if execution_result.timed_out:
+        diag_parts.append("Status: TIMED OUT")
+    if execution_result.stderr and execution_result.stderr.strip():
+        diag_parts.append(f"Error Output (stderr / Traceback):\n{execution_result.stderr.strip()}")
+    if execution_result.stdout and execution_result.stdout.strip():
+        diag_parts.append(f"Standard Output (stdout):\n{execution_result.stdout.strip()}")
+
+    diagnostic_text = "\n\n".join(diag_parts) if diag_parts else "Execution exited with non-zero status."
+
+    return (
+        f"[SELF-HEALING AUTO-REPAIR - Attempt {attempt} of {max_retries}]\n"
+        f"The previously generated code failed during execution. Please analyze the error, fix the bug, and provide working code.\n\n"
+        f"### Original Goal:\n{original_prompt}\n\n"
+        f"### Previous Code ({language}):\n```{language}\n{failed_code.strip()}\n```\n\n"
+        f"### Execution Failure Diagnostic:\n{diagnostic_text}\n\n"
+        f"### Instructions:\n"
+        f"1. Explain what caused the error in 1-2 concise sentences.\n"
+        f"2. Provide the complete, corrected code enclosed in ```{language} ... ```.\n"
+        f"3. Ensure the fix resolves the specific error and satisfies the original goal."
+    )
+
+
 class JesseCodingBot:
     """
     General-purpose coding agent.
@@ -231,6 +265,48 @@ class JesseCodingBot:
             timeout=timeout,
         )
         return response, result
+
+    def ask_and_repair(
+        self,
+        user_prompt: str,
+        max_retries: int = 3,
+        preferred_lang: Optional[str] = None,
+        cwd: Optional[str] = None,
+        timeout: Optional[float] = None,
+    ) -> Tuple[str, Optional[ExecutionResult], int]:
+        """
+        Ask a question, execute code, and if execution fails, automatically retry
+        by sending the error diagnostic back to the model up to max_retries.
+        Returns: (final_response, final_execution_result, attempts_taken)
+        """
+        response, result = self.ask_and_execute(
+            user_prompt=user_prompt,
+            preferred_lang=preferred_lang,
+            cwd=cwd,
+            timeout=timeout,
+        )
+        attempts = 1
+        while result and not result.is_success and attempts < max_retries:
+            attempts += 1
+            lang = (self.last_extracted_code.language if self.last_extracted_code else preferred_lang) or "python"
+            code = self.last_extracted_code.code if self.last_extracted_code else ""
+            repair_prompt = build_repair_prompt(
+                original_prompt=user_prompt,
+                failed_code=code,
+                language=lang,
+                execution_result=result,
+                attempt=attempts,
+                max_retries=max_retries,
+            )
+            response, result = self.ask_and_execute(
+                user_prompt=repair_prompt,
+                preferred_lang=lang,
+                cwd=cwd,
+                timeout=timeout,
+            )
+            if result and result.is_success:
+                break
+        return response, result, attempts
 
     def reset_conversation(self) -> None:
         """Reset conversation history."""
