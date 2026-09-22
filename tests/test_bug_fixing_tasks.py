@@ -20,8 +20,8 @@ from testing.automated_testing import (
 )
 
 TESTING_DIR = Path(__file__).resolve().parent.parent / "testing"
-TASKS_FILE = TESTING_DIR / "tasks_bug_fixing.json"
-GENERATION_FILE = TESTING_DIR / "tasks_code_generation.json"
+TASKS_FILE = TESTING_DIR / "tasks" / "task_bug_issues.json"
+GENERATION_FILE = TESTING_DIR / "tasks" / "tasks_code_generation.json"
 TASKS = json.loads(TASKS_FILE.read_text(encoding="utf-8"))
 EXECUTOR = CodeExecutor()
 

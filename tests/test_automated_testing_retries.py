@@ -88,7 +88,7 @@ def test_resolve_selected_models_defaults_to_single_model():
     parser = build_argument_parser()
 
     # When no model flags are provided, defaults to single model ('jesse-prod')
-    args = parser.parse_args(["--tasks-file", "testing/tasks_bug_fixing.json", "--task", "bug_01", "--retries", "4"])
+    args = parser.parse_args(["--tasks-file", "testing/tasks/task_bug_issues.json", "--task", "bug_01", "--retries", "4"])
     models = resolve_selected_models(args)
     assert models == ["jesse-prod"]
 
@@ -241,3 +241,53 @@ def test_bot_submit_correction_calls_client():
         correction="```python\ncode\n```",
         model=bot.config.model,
     )
+
+
+def test_resolve_tasks_path_shortcuts():
+    from testing.automated_testing import (
+        DATASET_BUG_ISSUES,
+        DATASET_CODE_GENERATION,
+        resolve_tasks_path,
+    )
+
+    # Defaults to code generation
+    assert resolve_tasks_path() == DATASET_CODE_GENERATION
+
+    # Dataset shortcut: generate
+    assert resolve_tasks_path(dataset="generate") == DATASET_CODE_GENERATION
+    assert resolve_tasks_path(tasks_file="generate") == DATASET_CODE_GENERATION
+
+    # Dataset shortcut: bugs / bug_issues / fix_bugs
+    assert resolve_tasks_path(dataset="bugs") == DATASET_BUG_ISSUES
+    assert resolve_tasks_path(dataset="bug_issues") == DATASET_BUG_ISSUES
+    assert resolve_tasks_path(tasks_file="task_bug_issues.json") == DATASET_BUG_ISSUES
+    assert resolve_tasks_path(tasks_file="task_bug_issues") == DATASET_BUG_ISSUES
+
+    # Repair mode flags
+    assert resolve_tasks_path(repair=True) == DATASET_BUG_ISSUES
+    assert resolve_tasks_path(mode="repair") == DATASET_BUG_ISSUES
+    assert resolve_tasks_path(mode="fix_bugs") == DATASET_BUG_ISSUES
+
+
+def test_build_task_prompt_with_buggy_code():
+    from testing.automated_testing import build_task_prompt
+
+    task = {
+        "id": "bug_01",
+        "title": "Sample Buggy Task",
+        "language": "python",
+        "mode": "repair",
+        "task": "Fix the logic bug in this program.",
+        "buggy_code": "def solve():\n    return False\n",
+        "buggy_output": "False",
+        "input": "",
+        "expected_output": "True\n",
+    }
+    prompt = build_task_prompt(task)
+    assert "Find and fix every bug" in prompt
+    assert "Buggy Program:" in prompt
+    assert "def solve():" in prompt
+    assert "Current (Buggy) Output:" in prompt
+    assert "False" in prompt
+    assert "Output ONLY the complete runnable program" in prompt
+

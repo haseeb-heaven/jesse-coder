@@ -130,6 +130,8 @@ tmp/
 temp/
 *.tmp
 *.temp
+testing/reports/*.json
+testing/reports/*.md
 
 # ==============================================================================
 # Operating System Metadata

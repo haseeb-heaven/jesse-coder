@@ -119,14 +119,9 @@ jesse-coder/
 │   ├── run_web.sh                # GUI web console launcher
 │   └── build_frontend.sh         # Frontend asset bundler
 ├── testing/                      # Automated benchmark & evaluation suite
-│   ├── automated_testing.py      # Multi-model test runner with stdin streaming
-│   ├── tasks.json                # Standard 10 algorithmic benchmark tasks
-│   ├── tasks_complex.json        # Advanced algorithmic task set 2
-│   ├── tasks_code_generation.json # Code generation tasks (20 tasks, mode: generate)
-│   ├── tasks_bug_fixing.json      # Bug fixing tasks (5 tasks, mode: fix_bugs)
-│   ├── TASK_EVAL_REPORT.md       # Detailed task-by-task execution report
-│   ├── MODEL_COMPARISON_REPORT.md# Cross-model evaluation matrix
-│   ├── TASKS_COMPLEX_REPORT.md   # Task set 2 evaluation report
+│   ├── automated_testing.py      # Multi-model test runner with retries, repair mode & learning
+│   ├── tasks/                    # Task datasets (tasks_code_generation.json, task_bug_issues.json)
+│   ├── reports/                  # Output directory for evaluation reports
 │   └── README.md                 # Testing suite documentation
 ├── tests/                        # Comprehensive unit & integration tests
 │   ├── test_client.py            # API error mapping & retry tests
@@ -253,36 +248,36 @@ python3 interfaces/tui/main.py
 
 The [`testing/`](testing/) directory contains an automated testing harness for feeding algorithmic tasks to Jesse models, compiling/executing them against standard input (`stdin`), and verifying outputs against expected results.
 
-### Two Task Types
+### Two Benchmark Datasets
 
-| Type | `mode` | Task file | What the model must do |
-| :--- | :--- | :--- | :--- |
-| **Code generation** | `generate` | [`tasks_code_generation.json`](testing/tasks_code_generation.json) | Write a new standalone program from a prompt (20 tasks). |
-| **Bug fixing** | `fix_bugs` | [`tasks_bug_fixing.json`](testing/tasks_bug_fixing.json) | Find the bugs in a small existing program and return the corrected program (5 tasks). |
+| Type | `mode` | Dataset file | What the model must do | Tasks |
+| :--- | :--- | :--- | :--- | :---: |
+| **Generating new code** | `generate` | [`tasks/tasks_code_generation.json`](testing/tasks/tasks_code_generation.json) | Write a new standalone program from natural-language spec. | 20 |
+| **Fixing Bugs / Issues** | `fix_bugs` | [`tasks/task_bug_issues.json`](testing/tasks/task_bug_issues.json) | Locate and repair bugs in existing multi-language programs. | 10 |
 
 ### Running Automated Tests
 
 ```bash
-# Run all benchmark tasks against default model (jesse-prod)
-python3 testing/automated_testing.py
+# Run code generation dataset (default)
+python3 testing/automated_testing.py --dataset generate
 
-# Run the code generation task set (jesse-prod)
-python3 testing/automated_testing.py --tasks-file testing/tasks_code_generation.json --model jesse-prod
+# Run with 5 retries and repair mode enabled
+python3 testing/automated_testing.py --mode repair --retries 5
 
-# Run the bug fixing task set (jesse-prod)
-python3 testing/automated_testing.py --tasks-file testing/tasks_bug_fixing.json --model jesse-prod
+# Or run with the --repair flag
+python3 testing/automated_testing.py --repair --retries 5
+
+# Run a specific bug task with 5 retries
+python3 testing/automated_testing.py --mode repair --task bug_01 --retries 5
+
+# Run with active model training on failure (via Jesse /feedback learning)
+python3 testing/automated_testing.py --mode repair --task bug_01 --retries 5 --train
 
 # Run only Python tasks
-python3 testing/automated_testing.py --lang python
+python3 testing/automated_testing.py --mode repair --lang python
 
 # Run multi-model comparison across all 3 models (jesse-prod, jesse-pristine, jesse)
-python3 testing/automated_testing.py --all-models
-
-# Run a specific task ID
-python3 testing/automated_testing.py --task task_02
-
-# Run complex benchmark task set 2
-python3 testing/automated_testing.py --tasks-file testing/tasks_complex.json
+python3 testing/automated_testing.py --mode repair --all-models --retries 5
 ```
 
 ---

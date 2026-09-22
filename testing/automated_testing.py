@@ -35,12 +35,73 @@ OUTPUT_MATCHING_TOLERANT = (
     "tolerant (value labels & line breaks ignored; values and their order must match)"
 )
 
-# The two benchmark task types.
-#   generate : write new code from a prompt (tasks_code_generation.json)
-#   fix_bugs : repair bugs in an existing program (tasks_bug_fixing.json)
+# The benchmark directory structure and official datasets.
+TESTING_DIR = Path(__file__).resolve().parent
+TASKS_DIR = TESTING_DIR / "tasks"
+REPORTS_DIR = TESTING_DIR / "reports"
+
+DATASET_CODE_GENERATION = TASKS_DIR / "tasks_code_generation.json"
+DATASET_BUG_ISSUES = TASKS_DIR / "task_bug_issues.json"
+
+DATASET_SHORTCUTS: Dict[str, Path] = {
+    "generate": DATASET_CODE_GENERATION,
+    "generation": DATASET_CODE_GENERATION,
+    "code_generation": DATASET_CODE_GENERATION,
+    "tasks_code_generation": DATASET_CODE_GENERATION,
+    "tasks_code_generation.json": DATASET_CODE_GENERATION,
+    "task_code_generation": DATASET_CODE_GENERATION,
+    "task_code_generation.json": DATASET_CODE_GENERATION,
+    "1": DATASET_CODE_GENERATION,
+    "bugs": DATASET_BUG_ISSUES,
+    "bug": DATASET_BUG_ISSUES,
+    "issues": DATASET_BUG_ISSUES,
+    "bug_issues": DATASET_BUG_ISSUES,
+    "task_bug_issues": DATASET_BUG_ISSUES,
+    "task_bug_issues.json": DATASET_BUG_ISSUES,
+    "fix_bugs": DATASET_BUG_ISSUES,
+    "tasks_bug_fixing": DATASET_BUG_ISSUES,
+    "tasks_bug_fixing.json": DATASET_BUG_ISSUES,
+    "repair": DATASET_BUG_ISSUES,
+    "2": DATASET_BUG_ISSUES,
+}
+
 TASK_MODE_GENERATE = "generate"
 TASK_MODE_FIX_BUGS = "fix_bugs"
-LEGACY_FIX_MODE_ALIASES = ("debug",)
+LEGACY_FIX_MODE_ALIASES = ("debug", "repair", "fix", "bugs", "bug_issues", "bug_fixing")
+
+
+def resolve_tasks_path(
+    tasks_file: Optional[Union[str, Path]] = None,
+    dataset: Optional[str] = None,
+    mode: Optional[str] = None,
+    repair: bool = False,
+) -> Path:
+    """
+    Resolves the task dataset Path from CLI arguments or shortcuts.
+    Checks testing/tasks/ directory first, then fallback paths.
+    """
+    if repair or (mode and mode.strip().lower() in ("repair", "fix_bugs", "bugs")):
+        if not tasks_file and not dataset:
+            return DATASET_BUG_ISSUES
+
+    raw_choice = tasks_file or dataset
+    if raw_choice is None:
+        return DATASET_CODE_GENERATION
+    choice_str = str(raw_choice).strip().lower()
+    if choice_str in DATASET_SHORTCUTS:
+        return DATASET_SHORTCUTS[choice_str]
+    p = Path(raw_choice)
+    if p.exists():
+        return p
+    # Check in testing/tasks/
+    tasks_subpath = TASKS_DIR / p.name
+    if tasks_subpath.exists():
+        return tasks_subpath
+    # Check in testing/
+    testing_subpath = TESTING_DIR / p.name
+    if testing_subpath.exists():
+        return testing_subpath
+    raise FileNotFoundError(f"Tasks file not found: {raw_choice}")
 
 
 def normalize_output(text: str) -> str:
@@ -89,13 +150,23 @@ def build_task_prompt(task: Dict[str, Any]) -> str:
     sample_input = task.get("input", "")
     expected_output = task["expected_output"]
     task_mode = str(task.get("mode", TASK_MODE_GENERATE)).strip().lower()
-    fix_mode = task_mode in (TASK_MODE_FIX_BUGS, *LEGACY_FIX_MODE_ALIASES)
+    fix_mode = task_mode in (TASK_MODE_FIX_BUGS, *LEGACY_FIX_MODE_ALIASES) or bool(task.get("buggy_code"))
 
     lang_instructions = {
         "python": "Read from sys.stdin and print to sys.stdout.",
         "javascript": "Read from standard input using require('fs').readFileSync(0, 'utf-8') and print using console.log.",
         "cpp": "Read from std::cin and write to std::cout.",
     }.get(lang.lower(), "Read from standard input and write to standard output.")
+
+    buggy_code_snippet = ""
+    buggy_code = task.get("buggy_code") or task.get("buggy_program")
+    if buggy_code and f"```{lang}" not in description:
+        buggy_code_snippet = f"\n\nBuggy Program:\n```{lang}\n{buggy_code.strip()}\n```"
+
+    buggy_output_snippet = ""
+    buggy_output = task.get("buggy_output")
+    if buggy_output and buggy_output.strip() and "Current (Buggy) Output" not in description:
+        buggy_output_snippet = f"\n\nCurrent (Buggy) Output:\n{buggy_output.strip()}\n"
 
     if fix_mode:
         heading = (
@@ -132,7 +203,7 @@ Expected Output:
 {heading}
 
 Title: {title}
-Description: {description}
+Description: {description}{buggy_code_snippet}{buggy_output_snippet}
 
 {io_section}
 
@@ -609,7 +680,11 @@ def generate_comparison_markdown(
 
 
 def run_automated_testing(
-    tasks_file: Optional[Path] = None,
+    tasks_file: Optional[Union[str, Path]] = None,
+    dataset: Optional[str] = None,
+    mode: Optional[str] = None,
+    repair: bool = False,
+    output_dir: Optional[Union[str, Path]] = None,
     models: Optional[List[str]] = None,
     task_id_filter: Optional[str] = None,
     language_filter: Optional[str] = None,
@@ -618,13 +693,18 @@ def run_automated_testing(
     retries: int = 3,
     train_model: bool = False,
 ) -> None:
-    if tasks_file is None:
-        tasks_file = Path(__file__).resolve().parent / "tasks.json"
-    if not tasks_file.exists():
-        raise FileNotFoundError(f"tasks.json not found at {tasks_file}")
+    resolved_path = resolve_tasks_path(tasks_file=tasks_file, dataset=dataset, mode=mode, repair=repair)
+    if not resolved_path.exists():
+        raise FileNotFoundError(f"Tasks file not found at {resolved_path}")
 
-    with open(tasks_file, "r", encoding="utf-8") as f:
+    with open(resolved_path, "r", encoding="utf-8") as f:
         tasks = json.load(f)
+
+    # Force repair / fix_bugs mode on tasks if explicitly requested
+    if repair or (mode and mode.strip().lower() in ("repair", "fix_bugs", "bugs")):
+        for t in tasks:
+            if t.get("mode") not in (TASK_MODE_FIX_BUGS, *LEGACY_FIX_MODE_ALIASES):
+                t["mode"] = TASK_MODE_FIX_BUGS
 
     if force_language:
         for t in tasks:
@@ -648,10 +728,11 @@ def run_automated_testing(
     effective_retries = max(3, retries) if retries > 0 else 0
     retry_msg = f"Retries: {effective_retries} max (min 3)" if effective_retries > 0 else "Retries: Disabled"
     train_msg = " | Training on Failure: Enabled" if train_model else ""
+    repair_tag = " [REPAIR MODE]" if (repair or mode in ("repair", "fix_bugs", "bugs")) else ""
 
     print(f"===========================================================")
-    print(f"JesseCoder Automated Testing Suite")
-    print(f"Tasks File: {tasks_file.name} | Tasks: {len(tasks)} | Models: {', '.join(target_models)}")
+    print(f"JesseCoder Automated Testing Suite{repair_tag}")
+    print(f"Tasks File: {resolved_path.name} | Tasks: {len(tasks)} | Models: {', '.join(target_models)}")
     print(f"Output Matching: {OUTPUT_MATCHING_STRICT if strict_output else OUTPUT_MATCHING_TOLERANT} | {retry_msg}{train_msg}")
     print(f"===========================================================")
 
@@ -668,16 +749,17 @@ def run_automated_testing(
         )
         all_models_data.append(model_res)
 
-    output_dir = Path(__file__).resolve().parent
-    file_stem = tasks_file.stem
-    report_json_name = f"{file_stem}_report.json" if file_stem != "tasks" else "task_eval_report.json"
-    report_md_name = f"{file_stem.upper()}_REPORT.md" if file_stem != "tasks" else "TASK_EVAL_REPORT.md"
-    comp_json_name = f"{file_stem}_comparison_report.json" if file_stem != "tasks" else "model_comparison_report.json"
-    comp_md_name = f"{file_stem.upper()}_COMPARISON_REPORT.md" if file_stem != "tasks" else "MODEL_COMPARISON_REPORT.md"
+    out_dir = Path(output_dir) if output_dir else REPORTS_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+    file_stem = resolved_path.stem
+    report_json_name = f"{file_stem}_report.json"
+    report_md_name = f"{file_stem.upper()}_REPORT.md"
+    comp_json_name = f"{file_stem}_comparison_report.json"
+    comp_md_name = f"{file_stem.upper()}_COMPARISON_REPORT.md"
 
     # Save primary model report
     primary_data = all_models_data[0]
-    primary_json_path = output_dir / report_json_name
+    primary_json_path = out_dir / report_json_name
     with open(primary_json_path, "w", encoding="utf-8") as f:
         json.dump({
             "summary": {
@@ -697,13 +779,13 @@ def run_automated_testing(
             "tasks": primary_data["tasks"],
         }, f, indent=2)
 
-    primary_md_path = output_dir / report_md_name
+    primary_md_path = out_dir / report_md_name
     with open(primary_md_path, "w", encoding="utf-8") as f:
         f.write(generate_markdown_report(primary_data))
 
     # If multiple models tested, save comparison reports
     if len(all_models_data) > 1:
-        comp_json_path = output_dir / comp_json_name
+        comp_json_path = out_dir / comp_json_name
         with open(comp_json_path, "w", encoding="utf-8") as f:
             json.dump({
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -711,7 +793,7 @@ def run_automated_testing(
                 "models": all_models_data,
             }, f, indent=2)
 
-        comp_md_path = output_dir / comp_md_name
+        comp_md_path = out_dir / comp_md_name
         comp_md_content = generate_comparison_markdown(all_models_data, tasks)
         with open(comp_md_path, "w", encoding="utf-8") as f:
             f.write(comp_md_content)
@@ -733,10 +815,40 @@ def run_automated_testing(
 def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Automated Testing Suite for JesseCoder.")
     parser.add_argument(
+        "--dataset",
+        type=str,
+        default=None,
+        help=(
+            "Select benchmark dataset: 'generate' (tasks_code_generation.json) or "
+            "'bugs' / 'bug_issues' / 'repair' (task_bug_issues.json)."
+        ),
+    )
+    parser.add_argument(
         "--tasks-file",
+        type=str,
+        default=None,
+        help=(
+            "Path or shortcut to tasks dataset (e.g. 'generate', 'bugs', 'task_bug_issues.json', "
+            "'tasks_code_generation.json'). Default is 'generate'."
+        ),
+    )
+    parser.add_argument(
+        "--repair",
+        action="store_true",
+        help="Enable repair mode: evaluates bug-fixing tasks in task_bug_issues.json.",
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default=None,
+        choices=["generate", "repair", "fix_bugs"],
+        help="Testing mode: 'generate' (code generation) or 'repair' / 'fix_bugs' (bug fixing).",
+    )
+    parser.add_argument(
+        "--output-dir",
         type=Path,
         default=None,
-        help="Path to tasks.json (default: testing/tasks.json)",
+        help="Directory to write test reports to (default: testing/reports).",
     )
     parser.add_argument(
         "--model",
@@ -759,7 +871,7 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--task",
         type=str,
         default=None,
-        help="Specific task ID to run (e.g. task_02)",
+        help="Specific task ID to run (e.g. task_02 or bug_01)",
     )
     parser.add_argument(
         "--lang",
@@ -832,6 +944,10 @@ if __name__ == "__main__":
 
     run_automated_testing(
         tasks_file=args.tasks_file,
+        dataset=getattr(args, "dataset", None),
+        mode=getattr(args, "mode", None),
+        repair=getattr(args, "repair", False),
+        output_dir=getattr(args, "output_dir", None),
         models=selected_models,
         task_id_filter=args.task,
         language_filter=args.lang,
