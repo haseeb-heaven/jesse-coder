@@ -228,6 +228,10 @@ Available interactive commands in CLI:
 - `/autoexec`: Toggle automatic code execution.
 - `/exit`: Terminate session.
 
+**CLI Terminal Interface:**
+
+![JesseCoder CLI](docs/images/cli_interface.png)
+
 ### 3. Terminal User Interface (TUI)
 
 Launch the full-screen terminal interface built with Textual:
@@ -238,6 +242,9 @@ Launch the full-screen terminal interface built with Textual:
 python3 interfaces/tui/main.py
 ```
 
+**Terminal User Interface (TUI):**
+
+![JesseCoder TUI](docs/images/tui_interface.png)
 
 ---
 
