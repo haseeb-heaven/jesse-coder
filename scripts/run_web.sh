@@ -15,9 +15,9 @@ elif [ -f "$ROOT_DIR/env/bin/activate" ]; then
 fi
 
 # Ensure frontend bundle exists
-if [ ! -f "$ROOT_DIR/web/static/bundle.js" ]; then
+if [ ! -f "$ROOT_DIR/interfaces/gui/static/bundle.js" ]; then
     "$SCRIPT_DIR/build_frontend.sh"
 fi
 
-echo "🚀 Starting JesseCoder WebApp from source/web_app.py..."
-python3 "$ROOT_DIR/source/web_app.py" "$@"
+echo "🚀 Starting JesseCoder GUI WebApp from interfaces/gui/app.py..."
+python3 "$ROOT_DIR/interfaces/gui/app.py" "$@"

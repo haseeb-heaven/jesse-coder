@@ -5,22 +5,22 @@
 - **Passed**: 1
 - **Failed**: 9
 - **Pass Rate**: 10.0%
-- **Timestamp**: 2026-09-22 05:33:44
+- **Timestamp**: 2026-09-22 05:57:03
 
 ## Summary Table
 
 | Task ID | Title | Language | Status | Execution Time | Notes |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| `task_01` | Circular Queue | `python` | ❌ FAIL | 42.3ms | Output mismatch. |
-| `task_02` | LRU Cache | `python` | ✅ PASS | 49.4ms | Matches expected output |
-| `task_03` | Sliding Window Rate Limiter | `python` | ❌ FAIL | 23.3ms | Output mismatch. |
-| `task_04` | Shortest Path | `python` | ❌ FAIL | 37.4ms | Output mismatch. |
-| `task_05` | Inventory Transaction | `python` | ❌ FAIL | 26.4ms | Output mismatch. |
-| `task_06` | Payment Aggregation | `python` | ❌ FAIL | 38.4ms | Output mismatch. |
-| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | 30.4ms | Output mismatch. |
-| `task_08` | Binary Search Tree | `python` | ❌ FAIL | 35.1ms | Output mismatch. |
-| `task_09` | Dependency Build Order | `python` | ❌ FAIL | 48.3ms | Output mismatch. |
-| `task_10` | Video Watch Time | `python` | ❌ FAIL | 43.3ms | Output mismatch. |
+| `task_01` | Circular Queue | `python` | ❌ FAIL | 57.4ms | Output mismatch. |
+| `task_02` | LRU Cache | `python` | ✅ PASS | 65.3ms | Matches expected output |
+| `task_03` | Sliding Window Rate Limiter | `python` | ❌ FAIL | 62.5ms | Output mismatch. |
+| `task_04` | Shortest Path | `python` | ❌ FAIL | 65.1ms | Output mismatch. |
+| `task_05` | Inventory Transaction | `python` | ❌ FAIL | 37.1ms | Output mismatch. |
+| `task_06` | Payment Aggregation | `python` | ❌ FAIL | 61.7ms | Output mismatch. |
+| `task_07` | Merge Time Intervals | `python` | ❌ FAIL | 54.1ms | Output mismatch. |
+| `task_08` | Binary Search Tree | `python` | ❌ FAIL | 29.9ms | Output mismatch. |
+| `task_09` | Dependency Build Order | `python` | ❌ FAIL | 61.5ms | Output mismatch. |
+| `task_10` | Video Watch Time | `python` | ❌ FAIL | 63.0ms | Output mismatch. |
 
 ## Detailed Task Results
 

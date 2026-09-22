@@ -1,22 +1,15 @@
-#!/usr/bin/env python3
 """
-1-Click Launcher for Jesse Coding Bot TUI.
-Run directly with: python3 tui_app.py
+TUI application launcher wrapper — delegates to interfaces.tui.main.
 """
-
-from pathlib import Path
 import sys
+from pathlib import Path
 
-# Ensure current and parent folders are on sys.path
-current_dir = str(Path(__file__).resolve().parent)
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+_ROOT = Path(__file__).resolve().parent.parent
+_INTERFACES = _ROOT / "interfaces"
+if str(_INTERFACES) not in sys.path:
+    sys.path.insert(0, str(_INTERFACES))
 
-parent_dir = str(Path(__file__).resolve().parent.parent)
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
-
-from tui import run_tui
+from interfaces.tui.main import *
 
 if __name__ == "__main__":
-    run_tui()
+    main()

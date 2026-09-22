@@ -15,10 +15,12 @@
 
 Check Jesse built-in CAD software for [@solidSF](https://solidsf.com/).
 
-### 🌐 Official Platforms & Interactive Playground
-- **SolidSF Official CAD Platform**: [https://solidsf.com/](https://solidsf.com/) — Next-generation CAD powered by Jesse.
-- **Interactive Playground**: [https://jesse.my/#playground](https://jesse.my/#playground) — Try Jesse out live with an **Unlimited API per day**!
-- **API Endpoint**: `https://jesse.solidsf.com/api/v1`
+### 🌐 Official Platforms, Inference API & Playground
+- **Jesse Official Site**: [https://jesse.my](https://jesse.my) — Official homepage for the Jesse inference model and coding engine.
+- **SolidSF Official CAD Platform**: [https://solidsf.com/](https://solidsf.com/) — Next-generation CAD engineering software powered by Jesse.
+- **Jesse Inference API & Engine**: [https://jesse.solidsf.com/api](https://jesse.solidsf.com/api) — Commercial autonomous inference API & continuous learning engine (Open Paid Beta, unlimited daily requests, strict 1 req / 2s rate limit, OpenAI compatibility, and dual-model continuous learning).
+- **Interactive Playground**: [https://jesse.my/#playground](https://jesse.my/#playground) — Try Jesse out live in your browser with an **Unlimited API per day**!
+- **API Base Endpoint**: `https://jesse.solidsf.com/api/v1`
 
 ---
 
@@ -27,13 +29,25 @@ Check Jesse built-in CAD software for [@solidSF](https://solidsf.com/).
 - **General-Purpose Coding Agent**: Writes, debugs, and refactors code across any problem domain without synthetic mocks or hardcoded task solutions.
 - **Isolated Subprocess Execution Sandbox**: Executes Python, C++, JavaScript (Node.js), and Shell scripts in detached process groups (`setsid` / `start_new_session=True`), enforcing strict timeouts (SIGTERM ➔ SIGKILL) and live streaming standard input/output.
 - **Real-Time Token Streaming**: Streams code and explanations token-by-token directly from Jesse API models using SSE over FastAPI or WebSockets.
-- **Multiple User Interfaces**:
-  - **Modern Web Console**: Interactive browser-based coding workbench with model picker, raw payload inspection, and live console execution.
-  - **Textual TUI**: Terminal-based user interface with side-by-side stream viewers and keyboard navigation.
-  - **CLI Runner**: Interactive multi-turn terminal chat or single-shot command-line generation.
+- **Three Dedicated User Interfaces**:
+  - **💻 Command Line Interface (CLI)**: Interactive multi-turn terminal chat or single-shot command-line prompt streaming with auto-execution.
+  - **📟 Terminal User Interface (TUI)**: Full-screen terminal dashboard built with Textual, dual stream viewers, and keyboard navigation.
+  - **🖥️ Graphical User Interface (GUI)**: Modern web console workbench with live SSE token streaming, model picker, and execution sandbox.
 - **Automated Testing & Multi-Model Evaluation**: Automated test suite executing benchmark problem sets with standard input (`stdin`) against `jesse-prod`, `jesse-pristine`, and `jesse`.
-- **Clean Root Architecture**: Zero coding files in root directory; strictly structured into `source/`, `scripts/`, `testing/`, `tests/`, and `web/`.
+- **Clean Root Architecture**: Zero coding files in root directory; strictly separated into [`interfaces/`](interfaces/) (CLI, TUI, GUI) and [`source/`](source/) (core engine).
 - **Zero Secrets In Source**: Strictly environment-variable driven via `.env.example` with runtime key masking and no committed credentials.
+
+---
+
+## 🖥️ Distinct User Interfaces (CLI, TUI, GUI)
+
+JesseCoder provides three dedicated user interfaces separated into isolated subpackages under [`interfaces/`](interfaces/):
+
+| Interface | Type | Location | Quick Launch Command | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **CLI** | Command Line Interface | [`interfaces/cli/`](interfaces/cli/) | `./scripts/run.sh`<br>`python3 interfaces/cli/main.py` | Interactive REPL, slash commands (`/exec`, `/code`, `/model`, `/clear`), and one-shot prompt streaming (`-p`, `-e`). |
+| **TUI** | Terminal User Interface | [`interfaces/tui/`](interfaces/tui/) | `./scripts/run.sh tui`<br>`python3 interfaces/tui/main.py` | Full-screen terminal dashboard built with Textual, dual streaming panels, keyboard navigation, and code workbench. |
+| **GUI** | Graphical User Interface | [`interfaces/gui/`](interfaces/gui/) | `./scripts/run_web.sh`<br>`python3 interfaces/gui/app.py` | Modern web console workbench, real-time SSE streaming, model switching, payload inspector, and sandbox execution. |
 
 ---
 
@@ -43,37 +57,66 @@ The repository follows a clean, professional architecture where the root folder 
 
 ```
 jesse-coder/
-├── source/                       # All Python application & package source code
+├── interfaces/                   # Dedicated user interface implementations
+│   ├── cli/                      # 💻 Command Line Interface (CLI)
+│   │   ├── __init__.py           # Package exports
+│   │   ├── cli.py                # Interactive REPL, slash commands, execution loop
+│   │   └── main.py               # CLI entrypoint runner
+│   ├── tui/                      # 📟 Terminal User Interface (TUI)
+│   │   ├── __init__.py           # Package exports
+│   │   ├── app.py                # Textual full-screen terminal workbench
+│   │   └── main.py               # TUI launcher entrypoint
+│   └── gui/                      # 🖥️ Graphical User Interface (GUI / Web Console)
+│       ├── __init__.py           # Package exports
+│       ├── app.py                # WebApp server runner (Uvicorn)
+│       ├── server.py             # FastAPI backend with SSE streaming
+│       ├── build.js              # Frontend build script
+│       ├── package.json          # Frontend build config
+│       ├── tsconfig.json         # TypeScript compiler configuration
+│       ├── src/                  # TypeScript frontend source
+│       │   ├── app.ts
+│       │   ├── api.ts
+│       │   ├── markdown.ts
+│       │   ├── types.ts
+│       │   └── ui.ts
+│       └── static/               # Production HTML, CSS, and JS bundle
+│           ├── index.html
+│           ├── styles.css
+│           ├── bundle.js
+│           └── favicon.svg
+├── source/                       # ⚙️ Core Engine & Logic (NO UI files)
 │   ├── jesse_coder/              # Modular library package
 │   │   ├── __init__.py           # Package exports & versioning
 │   │   ├── bot.py                # Orchestrator & multi-turn agent logic
-│   │   ├── cli.py                # Interactive CLI entrypoint
 │   │   ├── client.py             # Jesse OpenAI-compatible API client
 │   │   ├── code_extractor.py     # Robust fenced code & tool action extractor
 │   │   ├── config.py             # Dynamic configuration & environment loader
 │   │   ├── conversation.py       # Sliding-window context & message history
 │   │   ├── exceptions.py         # Domain-specific exception hierarchy
 │   │   ├── executor.py           # Process-isolated sandboxed code execution
-│   │   ├── tui.py                # Textual terminal user interface
-│   │   └── web_server.py         # FastAPI backend with SSE streaming
-│   ├── bot.py                    # Module aliases & standalone exports
-│   ├── cli.py
+│   │   ├── synthesizer.py        # Code synthesizer
+│   │   ├── cli.py                # Backward-compatibility alias
+│   │   ├── tui.py                # Backward-compatibility alias
+│   │   └── web_server.py         # Backward-compatibility alias
+│   ├── bot.py                    # Core engine modules
 │   ├── client.py
 │   ├── code_extractor.py
 │   ├── config.py
 │   ├── conversation.py
 │   ├── exceptions.py
 │   ├── executor.py
-│   ├── main.py                   # CLI entrypoint runner
-│   ├── run_tests.py
 │   ├── synthesizer.py
+│   ├── run_tests.py
+│   ├── example_stream.py
+│   ├── cli.py                    # Module aliases
 │   ├── tui.py
-│   ├── tui_app.py                # Textual TUI launcher
-│   ├── web_app.py                # WebApp server launcher
-│   └── web_server.py
+│   ├── tui_app.py
+│   ├── web_app.py
+│   ├── web_server.py
+│   └── main.py
 ├── scripts/                      # Shell automation scripts (NO scripts in root)
-│   ├── run.sh                    # Interactive CLI & TUI launcher
-│   ├── run_web.sh                # WebApp server launcher
+│   ├── run.sh                    # Unified launcher (CLI, TUI, GUI)
+│   ├── run_web.sh                # GUI web console launcher
 │   └── build_frontend.sh         # Frontend asset bundler
 ├── testing/                      # Automated benchmark & evaluation suite
 │   ├── automated_testing.py      # Multi-model test runner with stdin streaming
@@ -82,6 +125,7 @@ jesse-coder/
 │   ├── tasks_all.json            # Full 20-task benchmark suite
 │   ├── TASK_EVAL_REPORT.md       # Detailed task-by-task execution report
 │   ├── MODEL_COMPARISON_REPORT.md# Cross-model evaluation matrix
+│   ├── TASKS_COMPLEX_REPORT.md   # Task set 2 evaluation report
 │   └── README.md                 # Testing suite documentation
 ├── tests/                        # Comprehensive unit & integration tests
 │   ├── test_client.py            # API error mapping & retry tests
@@ -91,20 +135,11 @@ jesse-coder/
 │   ├── test_live.py              # End-to-end live API integration tests
 │   ├── test_tui.py               # Terminal UI widget tests
 │   └── test_web_server.py        # FastAPI endpoint integration tests
-├── web/                          # Frontend WebApp assets
-│   ├── static/                   # Production HTML, CSS, and JS bundle
-│   │   ├── index.html
-│   │   ├── styles.css
-│   │   └── bundle.js
-│   ├── src/                      # TypeScript source files
-│   │   └── app.ts
-│   ├── package.json              # WebApp build configuration
-│   └── build.js                  # Frontend bundle script
 ├── .env.example                  # Template configuration without secrets
 ├── .gitignore                    # Comprehensive Git ignore rules (cache, env, keys)
 ├── LICENSE                       # MIT License
 ├── pyproject.toml                # Modern Python packaging configuration
-├── pytest.ini                    # Pytest configuration (pythonpath configured for source/)
+├── pytest.ini                    # Pytest configuration (pythonpath configured for source/ and interfaces/)
 ├── README.md                     # Documentation
 └── requirements.txt              # Production dependency specifications
 ```
@@ -148,14 +183,14 @@ JESSE_TIMEOUT=60.0
 
 ## 🖥️ Usage Interfaces
 
-### 1. Web Console (Recommended)
+### 1. Graphical User Interface (GUI / Web Console)
 
 Launch the interactive web application:
 
 ```bash
 ./scripts/run_web.sh
 # OR
-python3 source/web_app.py --port 8080
+python3 interfaces/gui/app.py --port 8080
 ```
 
 Navigate to `http://localhost:8080` in your browser. Features include:
@@ -164,39 +199,41 @@ Navigate to `http://localhost:8080` in your browser. Features include:
 - Dynamic model picker switching between `jesse-prod`, `jesse-pristine`, and `jesse`.
 - Raw API payload inspector (`Ctrl+R`).
 
-### 2. Interactive CLI
+### 2. Command Line Interface (CLI)
 
 Launch the interactive terminal session:
 
 ```bash
 ./scripts/run.sh
 # OR
-python3 source/main.py
+python3 interfaces/cli/main.py
 ```
 
 Execute a single-shot prompt directly with auto-execution:
 
 ```bash
-python3 source/main.py --prompt "Write a Python script to compute the 10th Fibonacci number" --exec
+python3 interfaces/cli/main.py --prompt "Write a Python script to compute the 10th Fibonacci number" --exec
 ```
 
 Available interactive commands in CLI:
 - `/exec`: Execute the last extracted code block.
 - `/code`: View the raw extracted code.
 - `/model <name>`: Switch the active model (`jesse-prod`, `jesse-pristine`, `jesse`).
-- `/reset`: Clear conversation context memory.
+- `/clear`: Clear conversation context memory.
+- `/history`: Print full turn history.
 - `/autoexec`: Toggle automatic code execution.
 - `/exit`: Terminate session.
 
-### 3. Terminal UI (TUI)
+### 3. Terminal User Interface (TUI)
 
 Launch the full-screen terminal interface built with Textual:
 
 ```bash
 ./scripts/run.sh tui
 # OR
-python3 source/tui_app.py
+python3 interfaces/tui/main.py
 ```
+
 
 ---
 

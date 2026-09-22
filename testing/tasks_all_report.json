@@ -1,0 +1,24 @@
+{
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "pass_rate_pct": 0.0,
+    "model": "jesse-prod",
+    "timestamp": "2026-09-22 05:59:24"
+  },
+  "tasks": [
+    {
+      "id": "task_11",
+      "title": "Weighted Job Scheduling",
+      "language": "python",
+      "passed": false,
+      "duration_ms": 0.0,
+      "expected_output": "MAX_PROFIT 22\nJOBS A D H J\n",
+      "actual_output": "",
+      "error": "No valid code block extracted from model response.",
+      "model_response": "A job starting exactly when another job ends is allowed.",
+      "extracted_code": ""
+    }
+  ]
+}

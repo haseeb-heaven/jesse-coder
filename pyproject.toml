@@ -39,13 +39,15 @@ dependencies = [
 ]
 
 [project.scripts]
-jesse-coder = "jesse_coder.cli:main"
-jesse-tui = "tui_app:main"
-jesse-web = "web_app:main"
+jesse-coder = "interfaces.cli.main:main"
+jesse-cli = "interfaces.cli.main:main"
+jesse-tui = "interfaces.tui.main:main"
+jesse-gui = "interfaces.gui.app:main"
+jesse-web = "interfaces.gui.app:main"
 jesse-test = "testing.automated_testing:run_automated_testing"
 
 [tool.setuptools.packages.find]
-where = ["source"]
+where = ["source", "interfaces"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # ==========================================================
-# Jesse Coding Bot - One-Click Launcher
+# Jesse Coding Bot - Unified Interface Launcher
 # ==========================================================
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 SRC_DIR="$ROOT_DIR/source"
+INT_DIR="$ROOT_DIR/interfaces"
 
 # Detect Python virtual environment
 if [ -n "$VIRTUAL_ENV" ]; then
@@ -21,8 +22,7 @@ else
     exit 1
 fi
 
-echo "Using Python: $PYTHON_BIN"
-export PYTHONPATH="$SRC_DIR:$ROOT_DIR:$PYTHONPATH"
+export PYTHONPATH="$INT_DIR:$SRC_DIR:$ROOT_DIR:$PYTHONPATH"
 
 # Mode dispatch
 if [ "$1" == "test" ]; then
@@ -30,7 +30,9 @@ if [ "$1" == "test" ]; then
 elif [ "$1" == "example" ]; then
     "$PYTHON_BIN" "$SRC_DIR/example_stream.py"
 elif [ "$1" == "tui" ]; then
-    "$PYTHON_BIN" "$SRC_DIR/tui_app.py" "${@:2}"
+    "$PYTHON_BIN" "$INT_DIR/tui/main.py" "${@:2}"
+elif [ "$1" == "gui" ] || [ "$1" == "web" ]; then
+    "$PYTHON_BIN" "$INT_DIR/gui/app.py" "${@:2}"
 else
-    "$PYTHON_BIN" "$SRC_DIR/main.py" "$@"
+    "$PYTHON_BIN" "$INT_DIR/cli/main.py" "$@"
 fi
