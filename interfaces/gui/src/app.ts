@@ -668,13 +668,9 @@ ${diagnostic}
   private async openSettings(): Promise<void> {
     try {
       const settings = await api.getSettings();
-      const storedKey = api.getStoredApiKey();
-      if (storedKey && (!settings.has_api_key || !settings.api_key_masked)) {
-        settings.has_api_key = true;
-        settings.api_key_masked = storedKey.length > 8
-          ? `${storedKey.slice(0, 8)}${'•'.repeat(8)}${storedKey.slice(-4)}`
-          : '•'.repeat(storedKey.length);
-      }
+      // Strictly stateless: never display any saved or masked key
+      settings.has_api_key = false;
+      settings.api_key_masked = '';
       this.ui.populateSettings(settings, this.ui.getMaxRetries());
       this.ui.showSettingsModal();
     } catch (err: any) {
@@ -731,7 +727,7 @@ ${diagnostic}
       this.ui.hideSettingsModal();
 
       if (updated.is_vercel || updated.byok_mode) {
-        this.ui.showToast('✅ Key saved locally in browser! (Bring Your Own Key mode)');
+        this.ui.showToast('✅ Key active in transient memory for this tab (stateless)');
       } else if (updated.saved_to_env) {
         this.ui.showToast('✅ Settings saved to .env & active session!');
       } else {

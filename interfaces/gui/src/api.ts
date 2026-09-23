@@ -26,23 +26,36 @@ import {
 } from './types';
 
 const API_BASE = window.location.origin;
-const LOCAL_STORAGE_KEY_API_KEY = 'jesse_api_key_override';
+
+// ---------------------------------------------------------------------------
+// 100% Stateless In-Memory Key Storage
+// Keys are NEVER saved to localStorage, sessionStorage, cookies, or server.
+// They live only in this transient JS variable while the current tab is open.
+// ---------------------------------------------------------------------------
+let _statelessSessionApiKey: string = '';
+
+// Proactively clear any legacy cached keys from prior versions
+try {
+  localStorage.removeItem('jesse_api_key_override');
+  localStorage.removeItem('jesse_api_key');
+  sessionStorage.removeItem('jesse_api_key_override');
+  sessionStorage.removeItem('jesse_api_key');
+} catch {}
 
 export function getStoredApiKey(): string {
-  try {
-    return localStorage.getItem(LOCAL_STORAGE_KEY_API_KEY) || '';
-  } catch {
-    return '';
-  }
+  return _statelessSessionApiKey;
 }
 
 export function setStoredApiKey(key: string): void {
+  _statelessSessionApiKey = (key || '').trim();
+}
+
+export function clearStoredApiKey(): void {
+  _statelessSessionApiKey = '';
   try {
-    if (key && key.trim()) {
-      localStorage.setItem(LOCAL_STORAGE_KEY_API_KEY, key.trim());
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_KEY_API_KEY);
-    }
+    localStorage.removeItem('jesse_api_key_override');
+    localStorage.removeItem('jesse_api_key');
+    sessionStorage.clear();
   } catch {}
 }
 

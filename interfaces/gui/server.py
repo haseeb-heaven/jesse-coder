@@ -257,14 +257,29 @@ async def health_check(request: Request) -> Dict[str, Any]:
     active_bot = get_bot(api_key_override=header_key)
     current_key = active_bot.config.api_key
     has_key = bool(current_key and current_key != "unconfigured")
+    if is_vercel_env():
+        # In Vercel BYOK mode, server is 100% stateless. Only report has_key if request header included it.
+        req_has_key = bool(header_key and header_key != "unconfigured")
+        return {
+            "status": "online",
+            "model": active_bot.config.model,
+            "base_url": active_bot.config.base_url,
+            "has_api_key": req_has_key,
+            "api_key_masked": mask_api_key(header_key) if req_has_key else "",
+            "is_vercel": True,
+            "byok_mode": True,
+            "history_count": len(active_bot.get_history()),
+            "has_last_code": active_bot.last_extracted_code is not None,
+            "has_last_execution": active_bot.last_execution_result is not None,
+        }
     return {
         "status": "online",
         "model": active_bot.config.model,
         "base_url": active_bot.config.base_url,
         "has_api_key": has_key,
         "api_key_masked": mask_api_key(current_key) if has_key else "",
-        "is_vercel": is_vercel_env(),
-        "byok_mode": is_vercel_env(),
+        "is_vercel": False,
+        "byok_mode": False,
         "history_count": len(active_bot.get_history()),
         "has_last_code": active_bot.last_extracted_code is not None,
         "has_last_execution": active_bot.last_execution_result is not None,
@@ -276,6 +291,16 @@ async def get_settings(request: Request) -> Dict[str, Any]:
     """Retrieve current system settings with masked API key."""
     header_key = extract_request_api_key(request)
     active_bot = get_bot(api_key_override=header_key)
+    if is_vercel_env():
+        # In Vercel stateless BYOK mode, never return any saved key from server
+        return {
+            "has_api_key": False,
+            "api_key_masked": "",
+            "base_url": active_bot.config.base_url,
+            "model": active_bot.config.model,
+            "is_vercel": True,
+            "byok_mode": True,
+        }
     current_key = active_bot.config.api_key
     has_key = bool(current_key and current_key != "unconfigured")
     return {
@@ -283,27 +308,25 @@ async def get_settings(request: Request) -> Dict[str, Any]:
         "api_key_masked": mask_api_key(current_key) if has_key else "",
         "base_url": active_bot.config.base_url,
         "model": active_bot.config.model,
-        "is_vercel": is_vercel_env(),
-        "byok_mode": is_vercel_env(),
+        "is_vercel": False,
+        "byok_mode": False,
     }
 
 
 @app.post("/api/settings")
 async def update_settings(req: SettingsRequest, request: Request) -> Dict[str, Any]:
-    """Update system settings. In Vercel BYOK mode, keys are client-managed in localStorage."""
+    """Update system settings. In Vercel BYOK mode, keys are client-managed in memory only."""
     if is_vercel_env():
-        has_key = bool(req.api_key and req.api_key.strip())
-        key_masked = mask_api_key(req.api_key.strip()) if has_key else ""
         return {
             "status": "ok",
-            "has_api_key": has_key,
-            "api_key_masked": key_masked,
+            "has_api_key": False,
+            "api_key_masked": "",
             "base_url": req.base_url or os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1"),
             "model": req.model or os.getenv("JESSE_MODEL", "jesse-prod"),
             "saved_to_env": False,
             "is_vercel": True,
             "byok_mode": True,
-            "message": "Key stored client-side in browser localStorage (Bring Your Own Key mode)",
+            "message": "Key active in transient memory for this tab only (stateless)",
         }
 
     active_bot = get_bot()
