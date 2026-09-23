@@ -88,53 +88,15 @@ def is_vercel_env() -> bool:
     return bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
 
 
-# Serverless session and fileless in-memory + /tmp settings storage
-_SERVER_SETTINGS: Dict[str, Any] = {}
-_TMP_SETTINGS_PATH = Path("/tmp/jesse_coder_settings.json")
-
-
-def load_serverless_settings() -> Dict[str, Any]:
-    """Load settings from in-memory cache or /tmp in serverless environment."""
-    global _SERVER_SETTINGS
-    if _SERVER_SETTINGS:
-        return _SERVER_SETTINGS
-    if _TMP_SETTINGS_PATH.exists():
-        try:
-            data = json.loads(_TMP_SETTINGS_PATH.read_text(encoding="utf-8"))
-            if isinstance(data, dict):
-                _SERVER_SETTINGS.update(data)
-                return _SERVER_SETTINGS
-        except Exception as exc:
-            logger.warning("Failed to read serverless settings from /tmp: %s", exc)
-    return _SERVER_SETTINGS
-
-
-def save_serverless_settings(settings: Dict[str, Any]) -> None:
-    """Save settings in memory and write to /tmp (fileless serverless environment)."""
-    global _SERVER_SETTINGS
-    _SERVER_SETTINGS.update(settings)
-    try:
-        _TMP_SETTINGS_PATH.write_text(json.dumps(_SERVER_SETTINGS, indent=2), encoding="utf-8")
-    except Exception as exc:
-        logger.warning("Failed to persist serverless settings to /tmp: %s", exc)
-
-
 def save_settings_to_env(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     model: Optional[str] = None,
 ) -> bool:
-    """Attempt to update or append settings in .env file if writable on disk, plus /tmp."""
-    # Always persist in memory and /tmp for serverless/fileless runtime
-    serverless_data: Dict[str, Any] = {}
-    if api_key is not None:
-        serverless_data["api_key"] = api_key
-    if base_url is not None:
-        serverless_data["base_url"] = base_url
-    if model is not None:
-        serverless_data["model"] = model
-    if serverless_data:
-        save_serverless_settings(serverless_data)
+    """Attempt to update or append settings in .env file if writable on disk (local mode only)."""
+    if is_vercel_env():
+        # In Vercel / serverless BYOK mode, never store or write keys on the server
+        return False
 
     try:
         env_path = _ROOT_DIR / ".env"
@@ -175,7 +137,36 @@ def save_settings_to_env(
 
 
 def get_bot(api_key_override: Optional[str] = None) -> JesseCodingBot:
-    """Lazy initialize and retrieve bot instance with serverless fallback."""
+    """
+    Retrieve bot instance.
+    In Vercel serverless environment:
+      - Strictly Bring Your Own Key (BYOK) mode.
+      - Zero keys stored on server; no fallback to .env or global caches.
+      - Each request gets an isolated bot instance initialized with that user's key.
+    In local development:
+      - Falls back to .env for convenience.
+    """
+    env_base = os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1").strip()
+    if "solidsf.com" in env_base or not env_base:
+        env_base = "https://jesse.my/api/v1"
+
+    default_model = os.getenv("JESSE_MODEL", "jesse-prod").strip() or "jesse-prod"
+
+    if is_vercel_env():
+        # Strictly BYOK mode: only the explicit request key is used
+        user_key = (
+            api_key_override.strip()
+            if (api_key_override and api_key_override.strip() != "unconfigured")
+            else ""
+        )
+        cfg = JesseConfig(
+            api_key=user_key or "unconfigured",
+            base_url=env_base,
+            model=default_model,
+        )
+        return JesseCodingBot(config=cfg)
+
+    # Local development mode
     global bot
     env_path = _ROOT_DIR / ".env"
     if env_path.exists():
@@ -185,40 +176,31 @@ def get_bot(api_key_override: Optional[str] = None) -> JesseCodingBot:
         except ImportError:
             pass
 
-    if bot is None:
-        cfg = JesseConfig()
-        if not cfg.api_key:
-            cfg.api_key = "unconfigured"
-        bot = JesseCodingBot(config=cfg)
-
-    # 1. Explicit override header passed
     resolved_key = (
         api_key_override.strip()
         if (api_key_override and api_key_override.strip() != "unconfigured")
         else None
     )
 
-    # 2. Serverless in-memory / /tmp storage (fileless persistence)
-    if not resolved_key:
-        cached = load_serverless_settings()
-        if cached.get("api_key") and cached["api_key"] != "unconfigured":
-            resolved_key = cached["api_key"]
-
-    # 3. Check environment / .env
     if not resolved_key:
         env_key = os.getenv("JESSE_API_KEY", "").strip()
         if env_key and env_key != "unconfigured":
             resolved_key = env_key
 
-    if resolved_key:
-        if bot.config.api_key != resolved_key:
+    if bot is None:
+        cfg = JesseConfig(
+            api_key=resolved_key or "unconfigured",
+            base_url=env_base,
+            model=default_model,
+        )
+        bot = JesseCodingBot(config=cfg)
+    else:
+        if resolved_key and bot.config.api_key != resolved_key:
             bot.config.api_key = resolved_key
             bot.client = JesseClient(config=bot.config)
 
-    # Ensure base_url defaults to https://jesse.my/api/v1
-    env_base = os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1").strip()
     if not bot.config.base_url or "solidsf.com" in bot.config.base_url:
-        bot.config.base_url = env_base if env_base else "https://jesse.my/api/v1"
+        bot.config.base_url = env_base
         bot.client = JesseClient(config=bot.config)
 
     return bot
@@ -282,6 +264,7 @@ async def health_check(request: Request) -> Dict[str, Any]:
         "has_api_key": has_key,
         "api_key_masked": mask_api_key(current_key) if has_key else "",
         "is_vercel": is_vercel_env(),
+        "byok_mode": is_vercel_env(),
         "history_count": len(active_bot.get_history()),
         "has_last_code": active_bot.last_extracted_code is not None,
         "has_last_execution": active_bot.last_execution_result is not None,
@@ -301,12 +284,28 @@ async def get_settings(request: Request) -> Dict[str, Any]:
         "base_url": active_bot.config.base_url,
         "model": active_bot.config.model,
         "is_vercel": is_vercel_env(),
+        "byok_mode": is_vercel_env(),
     }
 
 
 @app.post("/api/settings")
 async def update_settings(req: SettingsRequest, request: Request) -> Dict[str, Any]:
-    """Update system settings, persist to environment and .env if writable."""
+    """Update system settings. In Vercel BYOK mode, keys are client-managed in localStorage."""
+    if is_vercel_env():
+        has_key = bool(req.api_key and req.api_key.strip())
+        key_masked = mask_api_key(req.api_key.strip()) if has_key else ""
+        return {
+            "status": "ok",
+            "has_api_key": has_key,
+            "api_key_masked": key_masked,
+            "base_url": req.base_url or os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1"),
+            "model": req.model or os.getenv("JESSE_MODEL", "jesse-prod"),
+            "saved_to_env": False,
+            "is_vercel": True,
+            "byok_mode": True,
+            "message": "Key stored client-side in browser localStorage (Bring Your Own Key mode)",
+        }
+
     active_bot = get_bot()
 
     if req.api_key is not None and req.api_key.strip():
@@ -344,7 +343,8 @@ async def update_settings(req: SettingsRequest, request: Request) -> Dict[str, A
         "base_url": active_bot.config.base_url,
         "model": active_bot.config.model,
         "saved_to_env": saved_to_env,
-        "is_vercel": is_vercel_env(),
+        "is_vercel": False,
+        "byok_mode": False,
     }
 
 
@@ -354,8 +354,14 @@ async def verify_settings(req: VerifyRequest, request: Request) -> Dict[str, Any
     # 1. Check explicit key in body
     key_to_test = req.api_key.strip() if req.api_key and req.api_key.strip() else None
 
-    # 2. Check .env directly so local verification always works out of the box
+    # 2. Check header key
     if not key_to_test:
+        header_key = extract_request_api_key(request)
+        if header_key and header_key != "unconfigured":
+            key_to_test = header_key
+
+    # 3. Check .env directly ONLY in local environment
+    if not key_to_test and not is_vercel_env():
         env_path = _ROOT_DIR / ".env"
         if env_path.exists():
             try:
@@ -367,19 +373,8 @@ async def verify_settings(req: VerifyRequest, request: Request) -> Dict[str, Any
         if env_key and env_key != "unconfigured":
             key_to_test = env_key
 
-    # 3. Check header key (for Vercel / serverless deployments)
-    if not key_to_test:
-        header_key = extract_request_api_key(request)
-        if header_key and header_key != "unconfigured":
-            key_to_test = header_key
-
-    # 4. Fallback to active bot config
-    if not key_to_test:
-        active_bot = get_bot()
-        key_to_test = active_bot.config.api_key
-
     if not key_to_test or key_to_test == "unconfigured":
-        return {"valid": False, "error": "No API key provided or found in .env."}
+        return {"valid": False, "error": "No API key provided. Please enter your Jesse API key to verify."}
 
     # Resolve base_url: prefer req.base_url, then .env, then https://jesse.my/api/v1
     raw_base = req.base_url.strip() if req.base_url and req.base_url.strip() else os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1").strip()
@@ -400,9 +395,10 @@ async def verify_settings(req: VerifyRequest, request: Request) -> Dict[str, Any
 
 
 @app.post("/api/model")
-async def switch_model(req: ModelSwitchRequest) -> Dict[str, Any]:
+async def switch_model(req: ModelSwitchRequest, request: Request) -> Dict[str, Any]:
     """Switch the active default model on the bot."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     active_bot.switch_model(req.model)
     logger.info("Active model switched to: %s", active_bot.config.model)
     return {"status": "ok", "model": active_bot.config.model}
@@ -423,7 +419,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
     if not active_bot.config.api_key or active_bot.config.api_key == "unconfigured":
         raise HTTPException(
             status_code=401,
-            detail="Jesse API key is not configured. Please open Settings (gear icon in the top right) and enter your API key.",
+            detail="Jesse API key is required (Bring Your Own Key mode). Please click Settings (⚙️) and enter your API key to get started.",
         )
 
     async def event_generator() -> AsyncGenerator[str, None]:
@@ -473,12 +469,13 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
 
 
 @app.post("/api/execute")
-async def execute_code(req: ExecuteRequest) -> Dict[str, Any]:
+async def execute_code(req: ExecuteRequest, request: Request) -> Dict[str, Any]:
     """
     Execute extracted or custom code in an isolated subprocess.
     Returns standard output, standard error, exit code, and execution time.
     """
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     try:
         res: ExecutionResult = active_bot.execute_code(
             code=req.code,
@@ -508,25 +505,27 @@ async def execute_code(req: ExecuteRequest) -> Dict[str, Any]:
 
 
 @app.post("/api/reset")
-async def reset_conversation() -> Dict[str, str]:
+async def reset_conversation(request: Request) -> Dict[str, str]:
     """Reset the current conversation context and memory."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     active_bot.reset_conversation()
     return {"status": "ok", "message": "Conversation context cleared"}
 
 
 @app.get("/api/history")
-async def get_history() -> Dict[str, Any]:
+async def get_history(request: Request) -> Dict[str, Any]:
     """Return current conversation history turns."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     return {"messages": active_bot.get_history()}
 
 
-
 @app.get("/api/raw")
-async def get_raw() -> Dict[str, Any]:
+async def get_raw(request: Request) -> Dict[str, Any]:
     """Return the raw unmodified Jesse API response."""
-    active_bot = get_bot()
+    header_key = extract_request_api_key(request)
+    active_bot = get_bot(api_key_override=header_key)
     raw = active_bot.last_raw_api_response or ""
     return {
         "raw": raw,
@@ -737,6 +736,7 @@ async def run_testing_benchmark(req: TestingRunRequest, request: Request) -> Dic
     """
     from testing.automated_testing import run_automated_testing
     header_key = extract_request_api_key(request)
+    old_key = os.environ.get("JESSE_API_KEY")
     if header_key:
         os.environ["JESSE_API_KEY"] = header_key
 
@@ -765,6 +765,12 @@ async def run_testing_benchmark(req: TestingRunRequest, request: Request) -> Dic
     except Exception as exc:
         logger.exception("Testing benchmark failed: %s", exc)
         raise HTTPException(status_code=500, detail=f"Benchmark execution failed: {exc}")
+    finally:
+        if is_vercel_env():
+            if old_key is None:
+                os.environ.pop("JESSE_API_KEY", None)
+            else:
+                os.environ["JESSE_API_KEY"] = old_key
 
 
 @app.get("/api/testing/reports")

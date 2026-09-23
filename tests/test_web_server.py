@@ -173,3 +173,39 @@ def test_benchmarks_button_and_modal_in_index(client):
     assert "bench-dataset-select" in res.text
 
 
+def test_byok_vercel_mode_health(client, monkeypatch):
+    """Test that Vercel runtime operates in pure BYOK mode with zero default keys."""
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.delenv("JESSE_API_KEY", raising=False)
+
+    # 1. Without header: no key
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["has_api_key"] is False
+    assert data["api_key_masked"] == ""
+    assert data["is_vercel"] is True
+    assert data["byok_mode"] is True
+
+    # 2. With client header: isolated to that request
+    res_keyed = client.get("/api/health", headers={"X-Jesse-Api-Key": "jesse_user_custom_key_1234"})
+    assert res_keyed.status_code == 200
+    data_keyed = res_keyed.json()
+    assert data_keyed["has_api_key"] is True
+    assert data_keyed["api_key_masked"].startswith("jesse_us")
+    assert data_keyed["api_key_masked"].endswith("1234")
+
+    # 3. Subsequent request without header still has no key (zero state bleed)
+    res_again = client.get("/api/health")
+    assert res_again.json()["has_api_key"] is False
+
+
+def test_byok_banner_in_index(client):
+    """Test that index HTML contains the BYOK notification banner."""
+    res = client.get("/")
+    assert res.status_code == 200
+    assert "byok-banner" in res.text
+    assert "Bring Your Own Key" in res.text
+
+
+

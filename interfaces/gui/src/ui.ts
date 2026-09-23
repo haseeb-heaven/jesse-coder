@@ -78,7 +78,11 @@ export class UIController {
   private btnBenchmarksEl: HTMLButtonElement;
   private btnCloseBenchmarksEl: HTMLButtonElement;
 
+  // BYOK elements
+  private byokBannerEl: HTMLElement | null;
+
   constructor() {
+    this.byokBannerEl       = document.getElementById('byok-banner');
     this.dialogueEl         = document.getElementById('dialogue-stream') as HTMLElement;
     this.promptInputEl      = document.getElementById('prompt-input') as HTMLTextAreaElement;
     this.btnSendEl          = document.getElementById('btn-send') as HTMLButtonElement;
@@ -381,11 +385,36 @@ export class UIController {
     }
   }
 
-  public setStatus(text: string, isOnline: boolean): void {
-    this.statusBadgeEl.innerHTML = `
-      <span class="inline-block w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'} mr-1.5"></span>
-      <span>${text}</span>
-    `;
+  public showByokBanner(): void {
+    this.byokBannerEl?.classList.remove('hidden');
+  }
+
+  public hideByokBanner(): void {
+    this.byokBannerEl?.classList.add('hidden');
+  }
+
+  public setStatus(text: string, state: 'online' | 'offline' | 'byok' | boolean): void {
+    let dotColor = 'bg-emerald-400 animate-pulse';
+    let textColor = 'text-emerald-600 dark:text-emerald-400';
+    let bgBorder = 'bg-emerald-500/10 border-emerald-500/30';
+
+    if (state === false || state === 'offline') {
+      dotColor = 'bg-rose-500';
+      textColor = 'text-rose-600 dark:text-rose-400';
+      bgBorder = 'bg-rose-500/10 border-rose-500/30';
+    } else if (state === 'byok') {
+      dotColor = 'bg-amber-400 animate-pulse';
+      textColor = 'text-amber-600 dark:text-amber-400';
+      bgBorder = 'bg-amber-500/15 border-amber-500/40';
+    }
+
+    if (this.statusBadgeEl) {
+      this.statusBadgeEl.className = `hidden lg:flex items-center gap-1.5 px-2.5 h-8 rounded-lg ${bgBorder} border text-xs font-mono ${textColor} shrink-0 cursor-pointer`;
+      this.statusBadgeEl.innerHTML = `
+        <span class="inline-block w-2 h-2 rounded-full ${dotColor}"></span>
+        <span class="font-semibold">${text}</span>
+      `;
+    }
   }
 
   public appendUserMessage(prompt: string): string {

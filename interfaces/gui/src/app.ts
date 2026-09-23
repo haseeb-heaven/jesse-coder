@@ -209,6 +209,22 @@ class JesseCoderApp {
       await this.handleVerifyKey();
     });
 
+    // ── BYOK (Bring Your Own Key) Banner & Badge Click ────────────────────────
+    document.getElementById('btn-byok-settings')?.addEventListener('click', async () => {
+      await this.openSettings();
+    });
+
+    document.getElementById('btn-byok-dismiss')?.addEventListener('click', () => {
+      this.ui.hideByokBanner();
+    });
+
+    document.getElementById('status-badge')?.addEventListener('click', async () => {
+      const storedKey = api.getStoredApiKey();
+      if (!storedKey) {
+        await this.openSettings();
+      }
+    });
+
     // ── Benchmarks & Automated Testing Suite ──────────────────────────────────
     document.getElementById('btn-benchmarks')?.addEventListener('click', async () => {
       await this.openBenchmarks();
@@ -256,18 +272,18 @@ class JesseCoderApp {
     try {
       const storedKey = api.getStoredApiKey();
       const health = await api.fetchHealth();
-      this.ui.setStatus(`ONLINE: ${health.model}`, true);
       if (health.model) {
         this.ui.setSelectedModel(health.model);
       }
-      // If serverless container cold-started without key, sync from browser localStorage
-      if (storedKey && (!health.has_api_key)) {
-        try {
-          await api.updateSettings({ api_key: storedKey });
-        } catch {}
+      if (storedKey || health.has_api_key) {
+        this.ui.setStatus(`ONLINE: ${health.model}`, 'online');
+        this.ui.hideByokBanner();
+      } else {
+        this.ui.setStatus('BYOK: Key Required', 'byok');
+        this.ui.showByokBanner();
       }
     } catch {
-      this.ui.setStatus('DISCONNECTED', false);
+      this.ui.setStatus('DISCONNECTED', 'offline');
     }
   }
 
@@ -420,6 +436,13 @@ ${diagnostic}
   private async handleSubmit(): Promise<void> {
     const prompt = this.ui.getPrompt();
     if (!prompt || this.isProcessing) return;
+
+    const storedKey = api.getStoredApiKey();
+    if (!storedKey) {
+      this.ui.showToast('🔑 Jesse API Key Required: Please enter your key in Settings (⚙️) to start coding.', true);
+      await this.openSettings();
+      return;
+    }
 
     this.isProcessing = true;
     this.ui.setInputEnabled(false);
@@ -707,8 +730,8 @@ ${diagnostic}
 
       this.ui.hideSettingsModal();
 
-      if (updated.is_vercel) {
-        this.ui.showToast('✅ Settings saved! (Stored in browser session for Vercel)');
+      if (updated.is_vercel || updated.byok_mode) {
+        this.ui.showToast('✅ Key saved locally in browser! (Bring Your Own Key mode)');
       } else if (updated.saved_to_env) {
         this.ui.showToast('✅ Settings saved to .env & active session!');
       } else {

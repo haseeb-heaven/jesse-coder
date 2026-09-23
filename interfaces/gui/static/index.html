@@ -190,6 +190,23 @@
     </div>
   </header>
 
+  <!-- BYOK (Bring Your Own Key) Reminder Banner -->
+  <div id="byok-banner" class="hidden bg-gradient-to-r from-amber-500/10 via-cyan-500/10 to-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs font-mono text-slate-700 dark:text-slate-300 z-20">
+    <div class="flex items-center gap-2">
+      <span class="text-amber-500 font-bold flex items-center gap-1.5 shrink-0">
+        <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+        Bring Your Own Key (BYOK):
+      </span>
+      <span>JesseCoder has zero server-stored keys. Enter your Jesse API Key to start coding.</span>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      <button id="btn-byok-settings" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-bold transition flex items-center gap-1 text-[11px]">
+        <span>Enter Key</span> ➔
+      </button>
+      <button id="btn-byok-dismiss" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs px-1" title="Dismiss">✕</button>
+    </div>
+  </div>
+
   <!-- Main Work Area -->
   <main class="flex-1 overflow-hidden p-3 md:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
 
@@ -449,28 +466,29 @@
           </div>
         </div>
 
-        <!-- Vercel Deployment Notice & Helper -->
+        <!-- Bring Your Own Key (BYOK) Architecture Card -->
         <div class="p-3.5 rounded-xl bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-200/80 dark:border-cyan-800/60 space-y-2 text-xs">
           <div class="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 font-mono font-bold">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
-            <span>Vercel Cloud Deployment Setup</span>
+            <span>Bring Your Own Key (BYOK) Architecture</span>
           </div>
           <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans">
-            In serverless environments like Vercel, keys are stored in your browser <code class="font-mono text-cyan-600 dark:text-cyan-300">localStorage</code> and transmitted with each request via <code class="font-mono text-cyan-600 dark:text-cyan-300">X-Jesse-Api-Key</code> headers.
+            JesseCoder operates on a strict <strong>zero server keys</strong> architecture. Every user brings their own API key. Your key is stored exclusively in your browser's private <code class="font-mono text-cyan-600 dark:text-cyan-300">localStorage</code> and transmitted with each request via encrypted <code class="font-mono text-cyan-600 dark:text-cyan-300">X-Jesse-Api-Key</code> headers over HTTPS. It is never persisted on the server or shared across users.
           </p>
           <div class="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-cyan-300/40 dark:border-cyan-800/40 flex items-center justify-between gap-2">
             <div class="font-mono text-[11px] text-slate-700 dark:text-slate-300 truncate">
-              <span class="text-slate-400">Vercel Env:</span> <span class="font-bold text-cyan-600 dark:text-cyan-400">JESSE_API_KEY</span>
+              <span class="text-slate-400">Need an API Key?</span> <span class="text-cyan-600 dark:text-cyan-400">Unlimited API access per day</span>
             </div>
-            <button
-              type="button"
-              onclick="navigator.clipboard.writeText('JESSE_API_KEY'); this.textContent = 'Copied!'; setTimeout(() => this.textContent = 'Copy Env Name', 2000);"
-              class="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-900/60 hover:bg-cyan-200 dark:hover:bg-cyan-800 text-[10px] font-mono text-cyan-700 dark:text-cyan-300 transition shrink-0"
+            <a
+              href="https://jesse.my/#playground"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-900/60 hover:bg-cyan-200 dark:hover:bg-cyan-800 text-[10px] font-mono text-cyan-700 dark:text-cyan-300 transition shrink-0 flex items-center gap-1 font-bold"
             >
-              Copy Env Name
-            </button>
+              <span>Get Key</span> ↗
+            </a>
           </div>
         </div>
       </div>

@@ -194,6 +194,18 @@ Navigate to `http://localhost:8080` in your browser. Features include:
 - Live isolated code execution (`Ctrl+E` or clicking **Run Code**).
 - Dynamic model picker switching between `jesse-prod`, `jesse-pristine`, and `jesse`.
 - Raw API payload inspector (`Ctrl+R`).
+- Interactive Automated Testing & Benchmarks modal with dataset selection, retries, and repair mode.
+- Settings & configuration modal with masked key display, connection testing, and model selection.
+
+#### 🌐 Cloud Deployment & Bring Your Own Key (BYOK)
+
+The hosted web application (e.g. deployed on [Vercel](https://jesse-coder.vercel.app)) operates on a strict **Bring Your Own Key (BYOK)** architecture:
+
+- **Zero Server-Stored Keys**: The cloud server carries **no API keys** in its environment or filesystem. It is completely public and multi-tenant safe.
+- **Client-Side Storage**: General users input their own Jesse API key via the web console Settings modal (`⚙️`). The key is saved exclusively in the user's private browser `localStorage`.
+- **Per-Request Transmission**: Every API request automatically sends the user's key over HTTPS via `X-Jesse-Api-Key` and `Authorization: Bearer <key>` headers.
+- **Complete User Isolation**: No user's key, chat history, or settings are ever saved on the server or visible to other users.
+- **Get an API Key**: Anyone can acquire an API key at [https://jesse.my](https://jesse.my) to access unlimited daily inference requests.
 
 **Web Console Interface:**
 

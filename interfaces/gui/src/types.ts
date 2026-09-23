@@ -55,6 +55,10 @@ export interface HealthStatus {
   status: string;
   model: string;
   base_url: string;
+  has_api_key?: boolean;
+  api_key_masked?: string;
+  is_vercel?: boolean;
+  byok_mode?: boolean;
   history_count: number;
   has_last_code: boolean;
   has_last_execution: boolean;
@@ -155,6 +159,7 @@ export interface ServerSettings {
   base_url: string;
   model: string;
   is_vercel: boolean;
+  byok_mode?: boolean;
   saved_to_env?: boolean;
 }
 
