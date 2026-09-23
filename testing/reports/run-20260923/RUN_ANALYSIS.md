@@ -132,3 +132,7 @@ Raw per-task responses, diagnostics, retry counts, and feedback payload outcomes
 | Bug fixing, model comparison | [`task_bug_issues_comparison_report.json`](../run-20260923-repair-train/task_bug_issues_comparison_report.json), [`TASK_BUG_ISSUES_COMPARISON_REPORT.md`](../run-20260923-repair-train/TASK_BUG_ISSUES_COMPARISON_REPORT.md) |
 
 The test report records **150 passed, 1 deselected** after adding the client-pacing checks. The deselected test is the unrelated live-chat endpoint test described above.
+
+## Follow-up: Python-only failed-task rerun
+
+On 2026-09-24, the Python tasks that had failed in the original run were rerun across all three model targets with up to five retries and per-key request pacing. No task passed or recovered. The code-generation subset failed mainly because no code block was returned; bug-fixing failures also included wrong-language output and output mismatches. Verified corrections were fed back for the failed bug-fixing tasks. See the [Python-only rerun report](../run-20260924-python-recheck/RERUN_ANALYSIS.md) and its linked task-level JSON evidence for details.
