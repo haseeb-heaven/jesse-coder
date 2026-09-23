@@ -184,6 +184,18 @@ def test_resolve_selected_models_defaults_to_single_model():
     assert models_multi == ["jesse-prod", "jesse"]
 
 
+def test_cli_accepts_multiple_specific_task_ids():
+    from testing.automated_testing import build_argument_parser
+
+    args = build_argument_parser().parse_args([
+        "--dataset", "generate", "--task-ids", "task_17,task_20,task_21",
+        "--lang", "python",
+    ])
+
+    assert args.task_ids == "task_17,task_20,task_21"
+    assert args.lang == "python"
+
+
 def test_build_task_prompt_without_stdin():
     from testing.automated_testing import build_task_prompt
 

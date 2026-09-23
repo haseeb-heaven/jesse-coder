@@ -719,6 +719,7 @@ def run_automated_testing(
     output_dir: Optional[Union[str, Path]] = None,
     models: Optional[List[str]] = None,
     task_id_filter: Optional[str] = None,
+    task_ids_filter: Optional[List[str]] = None,
     difficulty_filter: Optional[str] = None,
     language_filter: Optional[str] = None,
     force_language: Optional[str] = None,
@@ -768,6 +769,14 @@ def run_automated_testing(
         if not tasks:
             print(f"No tasks matched filter '{task_id_filter}'.")
             return {"status": "error", "message": f"No tasks matched filter '{task_id_filter}'."}
+
+    if task_ids_filter:
+        requested_ids = {task_id.strip() for task_id in task_ids_filter if task_id.strip()}
+        found_ids = {task.get("id") for task in tasks if task.get("id") in requested_ids}
+        missing_ids = requested_ids - found_ids
+        if missing_ids:
+            raise ValueError(f"Unknown or filtered-out task IDs: {', '.join(sorted(missing_ids))}")
+        tasks = [task for task in tasks if task.get("id") in requested_ids]
 
     target_models = models or ["jesse-prod"]
     executor = CodeExecutor()
@@ -932,11 +941,18 @@ def build_argument_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Test all available Jesse models (jesse-prod, jesse-pristine, jesse)",
     )
-    parser.add_argument(
+    task_selector = parser.add_mutually_exclusive_group()
+    task_selector.add_argument(
         "--task",
         type=str,
         default=None,
         help="Specific task ID to run (e.g. task_02 or bug_01)",
+    )
+    task_selector.add_argument(
+        "--task-ids",
+        type=str,
+        default=None,
+        help="Comma-separated exact task IDs to run together (e.g. task_02,task_07).",
     )
     parser.add_argument(
         "--lang",
@@ -1024,6 +1040,10 @@ if __name__ == "__main__":
         output_dir=getattr(args, "output_dir", None),
         models=selected_models,
         task_id_filter=args.task,
+        task_ids_filter=(
+            [task_id.strip() for task_id in args.task_ids.split(",") if task_id.strip()]
+            if args.task_ids else None
+        ),
         difficulty_filter=getattr(args, "difficulty", None),
         language_filter=args.lang,
         force_language=args.force_lang,

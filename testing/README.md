@@ -68,6 +68,14 @@ python3 testing/automated_testing.py --dataset generate --lang cpp
 python3 testing/automated_testing.py --mode repair --all-models --retries 5
 ```
 
+### 7. Rerun a Selected Set of Tasks
+Use `--task-ids` with `--lang` to repeat only a specific set of failed tasks in one process. This keeps the per-key request pacing shared across the selected calls:
+```bash
+python3 testing/automated_testing.py --dataset generate \
+  --task-ids task_17,task_20,task_21 --lang python \
+  --all-models --retries 5
+```
+
 ## Reports Output (`testing/reports/`)
 
 All generated evaluation reports are automatically written to `testing/reports/`:
