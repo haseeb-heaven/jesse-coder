@@ -178,6 +178,20 @@ def test_testing_reports_endpoints(client):
     assert isinstance(data["reports"], list)
 
 
+def test_testing_datasets_endpoint_reports_current_counts(client):
+    response = client.get("/api/testing/datasets")
+    assert response.status_code == 200
+    datasets = {item["id"]: item for item in response.json()["datasets"]}
+    assert datasets["tasks_code_generation.json"]["task_count"] == 45
+    assert datasets["tasks_code_generation.json"]["difficulty_counts"] == {
+        "easy": 15, "medium": 15, "complex": 15
+    }
+    assert datasets["task_bug_issues.json"]["task_count"] == 33
+    assert datasets["task_bug_issues.json"]["difficulty_counts"] == {
+        "easy": 11, "medium": 11, "complex": 11
+    }
+
+
 def test_benchmarks_button_and_modal_in_index(client):
     """Test index HTML includes benchmarks button and modal."""
     res = client.get("/")
@@ -220,6 +234,5 @@ def test_byok_banner_in_index(client):
     assert res.status_code == 200
     assert "byok-banner" in res.text
     assert "Bring Your Own Key" in res.text
-
 
 

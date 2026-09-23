@@ -308,8 +308,8 @@ def evaluate_model_on_tasks(
     """
     Evaluates a list of tasks against a specific Jesse model one-by-one.
     Supports self-healing auto-repair with minimum 3 retries on failure.
-    If train_model is True and a task fails, submits the task's exact_code
-    to Jesse /feedback so the model learns the correction.
+    If train_model is True and the first attempt fails, submits a trusted
+    dataset reference or a retry solution that passed the sample to /feedback.
     """
     effective_retries = max(3, retries) if retries > 0 else 0
     bot = JesseCodingBot(model=model_name)
@@ -469,8 +469,12 @@ def evaluate_model_on_tasks(
             print(f"       Diagnostic: {first_err[:90]}")
 
         trained = False
+        feedback_submitted = False
+        feedback_recorded = False
         training_info: Optional[Dict[str, Any]] = None
-        if not passed and train_model:
+        training_source: Optional[str] = None
+        training_skipped_reason: Optional[str] = None
+        if not passed_initial and train_model:
             exact_code = (
                 task.get("exact_code")
                 or task.get("fixed_code")
@@ -478,24 +482,37 @@ def evaluate_model_on_tasks(
                 or task.get("solution")
                 or task.get("reference_code")
             )
-            if exact_code and exact_code.strip():
+            correction_code = exact_code.strip() if exact_code and exact_code.strip() else ""
+            if correction_code:
+                training_source = "dataset_reference"
+            elif passed and extracted_code.strip():
+                # A retry result can serve as a correction only after it passes the
+                # task's executable sample; never train from an unverified failure.
+                correction_code = extracted_code.strip()
+                training_source = "sample_verified_retry"
+
+            if correction_code:
                 try:
-                    correction_payload = f"```{lang}\n{exact_code.strip()}\n```"
+                    correction_payload = f"```{lang}\n{correction_code}\n```"
                     fb_result = bot.submit_correction(
                         correction=correction_payload,
                         model=model_name,
                     )
-                    trained = True
+                    feedback_submitted = True
                     training_info = fb_result
-                    learning_str = ""
-                    if isinstance(fb_result, dict) and fb_result.get("learning_active"):
-                        learning_str = " (learning_active=True)"
-                    print(f"       🎓 [Model Trained] Submitted exact code correction for {task_id} to {model_name}{learning_str}")
+                    if isinstance(fb_result, dict):
+                        feedback_recorded = bool(fb_result.get("recorded"))
+                        trained = bool(fb_result.get("learning_active"))
+                    state = "learning active" if trained else "feedback recorded; learning inactive"
+                    if not feedback_recorded and not trained:
+                        state = "feedback request returned without active learning"
+                    print(f"       🎓 [Feedback] Submitted verified code correction for {task_id} to {model_name} ({state})")
                 except Exception as fb_err:
                     print(f"       ⚠️ [Training Failed] Feedback error for {task_id}: {fb_err}")
                     training_info = {"error": str(fb_err)}
             else:
-                print(f"       ℹ️ [Training Skipped] No exact_code in task JSON for {task_id}")
+                training_skipped_reason = "No dataset reference and retries did not produce a sample-passing solution."
+                print(f"       ℹ️ [Training Skipped] {training_skipped_reason}")
 
         task_record: Dict[str, Any] = {
             "id": task_id,
@@ -513,6 +530,10 @@ def evaluate_model_on_tasks(
             "model_response": model_response,
             "extracted_code": extracted_code,
             "trained": trained,
+            "feedback_submitted": feedback_submitted,
+            "feedback_recorded": feedback_recorded,
+            "training_source": training_source,
+            "training_skipped_reason": training_skipped_reason,
         }
         if training_info is not None:
             task_record["training_info"] = training_info
@@ -523,9 +544,14 @@ def evaluate_model_on_tasks(
     passed_initial_count = sum(1 for r in results if r.get("passed_initial"))
     passed_retry_count = sum(1 for r in results if r.get("passed_on_retry"))
     trained_count = sum(1 for r in results if r.get("trained"))
+    feedback_submitted_count = sum(1 for r in results if r.get("feedback_submitted"))
+    feedback_recorded_count = sum(1 for r in results if r.get("feedback_recorded"))
     pass_rate = (passed_count / total * 100) if total else 0.0
 
-    trained_msg = f", model corrections submitted: {trained_count}" if train_model else ""
+    trained_msg = (
+        f", feedback recorded: {feedback_recorded_count}, learning active: {trained_count}"
+        if train_model else ""
+    )
     print(f"▶ Result for {model_name}: {passed_count}/{total} Passed ({pass_rate:.1f}%) [initial: {passed_initial_count}, retry recoveries: {passed_retry_count}{trained_msg}]\n")
 
     return {
@@ -537,6 +563,8 @@ def evaluate_model_on_tasks(
         "retries_configured": effective_retries,
         "train_model_enabled": train_model,
         "trained_count": trained_count,
+        "feedback_submitted_count": feedback_submitted_count,
+        "feedback_recorded_count": feedback_recorded_count,
         "failed": total - passed_count,
         "pass_rate_pct": pass_rate,
         "output_matching": OUTPUT_MATCHING_STRICT if strict_output else OUTPUT_MATCHING_TOLERANT,
@@ -560,7 +588,11 @@ def generate_markdown_report(report_data: Dict[str, Any]) -> str:
         md.append(f"- **Passed on Initial Attempt**: {summary.get('passed_initial', 0)}")
         md.append(f"- **Passed via Auto-Repair Retry**: {summary.get('passed_on_retry', 0)}")
     if summary.get("train_model_enabled"):
-        md.append(f"- **Training on Error**: Enabled ({summary.get('trained_count', 0)} corrections submitted via /feedback)")
+        md.append(
+            "- **Training on Error**: Enabled "
+            f"({summary.get('feedback_recorded_count', 0)} corrections recorded; "
+            f"learning active for {summary.get('trained_count', 0)})"
+        )
     md.append(f"- **Output Matching**: {summary.get('output_matching', OUTPUT_MATCHING_TOLERANT)}")
     equivalent_count = sum(1 for r in results if r.get("equivalent_only"))
     if equivalent_count:
@@ -693,6 +725,7 @@ def run_automated_testing(
     strict_output: bool = False,
     retries: int = 3,
     train_model: bool = False,
+    auto_repair: Optional[bool] = None,
 ) -> Dict[str, Any]:
     resolved_path = resolve_tasks_path(tasks_file=tasks_file, dataset=dataset, mode=mode, repair=repair)
     if not resolved_path.exists():
@@ -739,7 +772,9 @@ def run_automated_testing(
     target_models = models or ["jesse-prod"]
     executor = CodeExecutor()
 
-    effective_retries = max(3, retries) if retries > 0 else 0
+    # `repair` selects the legacy bug-fixing dataset/mode. `auto_repair` controls
+    # retrying failed benchmark solutions; keep those independent for the GUI.
+    effective_retries = max(3, retries) if retries > 0 and auto_repair is not False else 0
     retry_msg = f"Retries: {effective_retries} max (min 3)" if effective_retries > 0 else "Retries: Disabled"
     train_msg = " | Training on Failure: Enabled" if train_model else ""
     repair_tag = " [REPAIR MODE]" if (repair or mode in ("repair", "fix_bugs", "bugs")) else ""
@@ -784,6 +819,8 @@ def run_automated_testing(
                 "retries_configured": primary_data.get("retries_configured", effective_retries),
                 "train_model_enabled": primary_data.get("train_model_enabled", train_model),
                 "trained_count": primary_data.get("trained_count", 0),
+                "feedback_submitted_count": primary_data.get("feedback_submitted_count", 0),
+                "feedback_recorded_count": primary_data.get("feedback_recorded_count", 0),
                 "failed": primary_data["failed"],
                 "pass_rate_pct": primary_data["pass_rate_pct"],
                 "model": primary_data["model"],
@@ -949,8 +986,8 @@ def build_argument_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="train_model",
         help=(
-            "Train/correct the model via Jesse /feedback API when a task fails "
-            "(execution error or output mismatch) using exact_code from the JSON task file."
+            "Train via Jesse /feedback after an initial failure, using exact_code "
+            "or a retry solution that passes the task sample."
         ),
     )
     return parser

@@ -275,7 +275,7 @@
     "mode": "generate",
     "difficulty": "complex",
     "title": "A* 2D Grid Pathfinding",
-    "task": "Find the shortest path on a 2D grid from start (S) to goal (G) avoiding obstacles (#) using the A* search algorithm with Manhattan distance heuristic. Print the minimum path cost and path length.",
+    "task": "Find the shortest path on a 2D grid from start (S) to goal (G) avoiding obstacles (#), using Manhattan distance as the A* heuristic. Every move to an adjacent cell costs 1. Print the minimum cost and number of cells in the path, including S and G.",
     "input": "5 5\nS . . . .\n# # # . .\n. . . . .\n. # # # .\n. . . . G\n",
     "expected_output": "COST: 8 STEPS: 9\n"
   },
@@ -285,9 +285,9 @@
     "mode": "generate",
     "difficulty": "complex",
     "title": "Distributed Consistent Hash Ring",
-    "task": "Implement a consistent hash ring with virtual nodes (vnodes = 3 per physical node). Support ADD node, REMOVE node, and GET key operations. For GET, print the physical node handling the key.",
+    "task": "Implement a consistent hash ring with three virtual nodes per physical node. Hash every node token formatted as <node>#<zero-based-vnode-index> and every key using SHA-256; interpret the first eight lowercase hexadecimal digits as an unsigned 32-bit ring position. A lookup selects the first token position greater than or equal to the key position, wrapping to the smallest position if needed. For hash collisions, order by physical node name and then vnode index. ADD and REMOVE print OK; GET prints the selected physical node.",
     "input": "ADD NodeA\nADD NodeB\nGET user_101\nGET user_202\nREMOVE NodeA\nGET user_101\n",
-    "expected_output": "OK\nOK\nNodeA\nNodeB\nOK\nNodeB\n"
+    "expected_output": "OK\nOK\nNodeB\nNodeA\nOK\nNodeB\n"
   },
   {
     "id": "task_30",
@@ -298,5 +298,155 @@
     "task": "Implement a regular expression matcher supporting '.', '*', and character literals using a Non-deterministic Finite Automaton (NFA) simulation. Print MATCH or NO_MATCH.",
     "input": "4\na*b aab\na.c abc\na.c abbc\n.* hello_world\n",
     "expected_output": "MATCH\nMATCH\nNO_MATCH\nMATCH\n"
+  },
+  {
+    "id": "task_31",
+    "language": "python",
+    "mode": "generate",
+    "difficulty": "easy",
+    "title": "Stable Deduplication",
+    "task": "Read n integers and print each distinct value once, preserving the order of its first appearance. The first line contains n; the second line contains n integers. Print one space-separated line. n is at least 1.",
+    "input": "9\n4 2 4 1 2 3 1 5 3\n",
+    "expected_output": "4 2 1 3 5\n"
+  },
+  {
+    "id": "task_32",
+    "language": "javascript",
+    "mode": "generate",
+    "difficulty": "easy",
+    "title": "Word Length Summary",
+    "task": "Read one line of whitespace-separated words. Print each distinct word and its character count in order of first appearance, one pair per line. Words contain only ASCII letters and comparison is case-sensitive.",
+    "input": "pear plum pear fig\n",
+    "expected_output": "pear 4\nplum 4\nfig 3\n"
+  },
+  {
+    "id": "task_33",
+    "language": "cpp",
+    "mode": "generate",
+    "difficulty": "easy",
+    "title": "Column Totals",
+    "task": "Read an R by C integer matrix and print the sum of each column on one space-separated line. The first line contains R and C, followed by R rows of C integers.",
+    "input": "3 4\n1 2 3 4\n5 6 7 8\n-1 0 2 1\n",
+    "expected_output": "5 8 12 13\n"
+  },
+  {
+    "id": "task_34",
+    "language": "python",
+    "mode": "generate",
+    "difficulty": "easy",
+    "title": "Run Length Encoding",
+    "task": "Read a non-empty string of lowercase ASCII letters and print consecutive runs as character followed by run length, separated by single spaces. Do not combine non-adjacent occurrences.",
+    "input": "aaabbcaaaa\n",
+    "expected_output": "a 3 b 2 c 1 a 4\n"
+  },
+  {
+    "id": "task_35",
+    "language": "javascript",
+    "mode": "generate",
+    "difficulty": "easy",
+    "title": "Balanced Brackets",
+    "task": "Read one line containing only (), [], and {}. Print YES if brackets are correctly nested and every opener is closed; otherwise print NO. The empty string is valid.",
+    "input": "{[()()]}\n",
+    "expected_output": "YES\n"
+  },
+  {
+    "id": "task_36",
+    "language": "python",
+    "mode": "generate",
+    "difficulty": "medium",
+    "title": "Top K Frequencies",
+    "task": "Read n integers and k. Print the k most frequent distinct values, ordered by descending frequency and then ascending numeric value. Input line one has n k and line two has n integers. It is guaranteed that k does not exceed the number of distinct values.",
+    "input": "10 3\n4 1 4 2 1 4 2 3 2 1\n",
+    "expected_output": "1 2 4\n"
+  },
+  {
+    "id": "task_37",
+    "language": "cpp",
+    "mode": "generate",
+    "difficulty": "medium",
+    "title": "Minimum Meeting Rooms",
+    "task": "Given n half-open meeting intervals [start, end), find the minimum number of rooms needed. A meeting ending at time t does not overlap one starting at t. The first line contains n, followed by n start/end pairs.",
+    "input": "5\n0 30\n5 10\n10 20\n20 25\n25 35\n",
+    "expected_output": "2\n"
+  },
+  {
+    "id": "task_38",
+    "language": "javascript",
+    "mode": "generate",
+    "difficulty": "medium",
+    "title": "Bounded Coin Change",
+    "task": "For each query amount, compute the minimum number of coins needed using unlimited coins of the given positive denominations. Print -1 when an amount cannot be formed. The first line has n q, the next line has n denominations, and the final line has q amounts. Amounts are between 0 and 10000.",
+    "input": "3 5\n1 3 4\n0 2 6 7 10\n",
+    "expected_output": "0 2 2 2 3\n"
+  },
+  {
+    "id": "task_39",
+    "language": "python",
+    "mode": "generate",
+    "difficulty": "medium",
+    "title": "Island Count",
+    "task": "Count connected components of land in a rectangular grid. Each cell is 1 (land) or 0 (water); cells connect only horizontally or vertically, not diagonally. The first line is rows and columns, followed by the grid rows.",
+    "input": "4 5\n1 1 0 0 1\n1 0 0 1 1\n0 0 1 0 0\n1 0 1 1 0\n",
+    "expected_output": "4\n"
+  },
+  {
+    "id": "task_40",
+    "language": "cpp",
+    "mode": "generate",
+    "difficulty": "medium",
+    "title": "Prefix Sum Queries",
+    "task": "Answer inclusive range-sum queries on a static integer array. Indices are 1-based. The first line contains n q, the second line contains n integers, then q pairs l r. Print one sum per query.",
+    "input": "6 4\n3 -2 5 1 0 4\n1 6\n2 4\n3 3\n5 6\n",
+    "expected_output": "11\n4\n5\n4\n"
+  },
+  {
+    "id": "task_41",
+    "language": "python",
+    "mode": "generate",
+    "difficulty": "complex",
+    "title": "Shortest Paths with Negative Edges",
+    "task": "Compute single-source shortest distances in a directed weighted graph that may contain negative edges. The graph is guaranteed to have no negative cycle reachable from the source. Input is N M S then M lines U V W. Print N distances in node order, using INF for unreachable nodes.",
+    "input": "5 6 0\n0 1 6\n0 2 7\n1 2 8\n1 3 5\n1 4 -4\n2 3 -3\n",
+    "expected_output": "0 6 7 4 2\n"
+  },
+  {
+    "id": "task_42",
+    "language": "javascript",
+    "mode": "generate",
+    "difficulty": "complex",
+    "title": "Offline Range Order Statistics",
+    "task": "For each query l r k, print the k-th smallest value in the inclusive subarray from 1-based index l through r. The first line contains n q, the second line contains n integers, followed by q queries. k is 1-based and valid for every query.",
+    "input": "7 4\n5 1 4 2 3 2 6\n1 7 4\n2 5 2\n3 6 3\n4 4 1\n",
+    "expected_output": "2\n2\n3\n2\n"
+  },
+  {
+    "id": "task_43",
+    "language": "cpp",
+    "mode": "generate",
+    "difficulty": "complex",
+    "title": "Maximum Flow",
+    "task": "Find the maximum flow from source 0 to sink N-1 in a directed graph with non-negative integer capacities. Input is N M followed by M lines U V C. Parallel edges are allowed and represent separate capacity. Print only the maximum flow value.",
+    "input": "6 10\n0 1 16\n0 2 13\n1 2 10\n2 1 4\n1 3 12\n3 2 9\n2 4 14\n4 3 7\n3 5 20\n4 5 4\n",
+    "expected_output": "23\n"
+  },
+  {
+    "id": "task_44",
+    "language": "python",
+    "mode": "generate",
+    "difficulty": "complex",
+    "title": "Minimum Spanning Forest",
+    "task": "Find the total weight of a minimum spanning forest of an undirected weighted graph. The graph may be disconnected; isolated vertices contribute zero. Input is N M followed by M edges U V W, with vertices numbered 0 through N-1. Print only the total weight.",
+    "input": "6 5\n0 1 4\n0 2 3\n1 2 1\n3 4 -2\n4 5 5\n",
+    "expected_output": "7\n"
+  },
+  {
+    "id": "task_45",
+    "language": "javascript",
+    "mode": "generate",
+    "difficulty": "complex",
+    "title": "Lexicographically Smallest Topological Order",
+    "task": "Given a directed acyclic graph, print the lexicographically smallest topological ordering of vertices numbered 1 through N. If multiple vertices have indegree zero, choose the smallest available vertex each time. Input is N M followed by M directed edges. Print the vertices on one line separated by spaces.",
+    "input": "6 6\n1 3\n2 3\n2 4\n3 5\n4 5\n5 6\n",
+    "expected_output": "1 2 3 4 5 6\n"
   }
 ]

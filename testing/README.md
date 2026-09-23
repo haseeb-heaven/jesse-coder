@@ -8,8 +8,8 @@ This directory contains the automated end-to-end task testing suite for JesseCod
 testing/
 ├── automated_testing.py   # Multi-model test runner with retries, repair mode & learning
 ├── tasks/                 # Benchmark task datasets (all JSON files stored here)
-│   ├── task_bug_issues.json       # Dataset 2: Fixing bugs/issues in code (10 tasks, mode: fix_bugs)
-│   ├── tasks_code_generation.json # Dataset 1: Generating new code (20 tasks, mode: generate)
+│   ├── task_bug_issues.json       # Dataset 2: Fixing bugs/issues in code (33 tasks, mode: fix_bugs)
+│   ├── tasks_code_generation.json # Dataset 1: Generating new code (45 tasks, mode: generate)
 │   ├── task_code_generation.json  # Alias to tasks_code_generation.json
 │   └── tasks_bug_fixing.json      # Alias to task_bug_issues.json
 ├── reports/               # Output directory where report JSON & Markdown files are written
@@ -47,7 +47,7 @@ python3 testing/automated_testing.py --mode repair --task bug_01 --retries 5
 ```
 
 ### 3. Run Repair Mode with Active Model Training (`--train`)
-When `--train` (or `--train-model` / `--correct`) is enabled, any failed task with verified `exact_code` in the JSON dataset submits an active correction via Jesse's `POST /feedback` endpoint (`learning_active: True`):
+When `--train` (or `--train-model` / `--correct`) is enabled, an initially failed task submits a trusted `exact_code`/`fixed_code` reference when available. If a retry passes the sample and the task has no reference solution, the passing retry code is submitted instead. Unverified failures without a reference are never submitted. Reports distinguish feedback that was recorded from models where learning is active; some model targets accept feedback without enabling learning:
 ```bash
 python3 testing/automated_testing.py --mode repair --task bug_01 --retries 5 --train
 ```
@@ -81,8 +81,8 @@ You can also specify a custom output directory using `--output-dir <path>`.
 
 | Dataset | Mode | File | Description | Tasks |
 | :--- | :--- | :--- | :--- | :---: |
-| **Generating new code** | `generate` | [`tasks/tasks_code_generation.json`](tasks/tasks_code_generation.json) | Write new standalone program from natural-language spec. | 20 |
-| **Fixing Bugs / Issues** | `fix_bugs` | [`tasks/task_bug_issues.json`](tasks/task_bug_issues.json) | Locate and repair bugs in existing programs. | 10 |
+| **Generating new code** | `generate` | [`tasks/tasks_code_generation.json`](tasks/tasks_code_generation.json) | Write new standalone program from natural-language spec; 15 tasks per difficulty. | 45 |
+| **Fixing Bugs / Issues** | `fix_bugs` | [`tasks/task_bug_issues.json`](tasks/task_bug_issues.json) | Locate and repair bugs in existing programs; 11 tasks per difficulty. | 33 |
 
 ### Bug Fixing Tasks Summary (`task_bug_issues.json`)
 

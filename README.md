@@ -264,8 +264,8 @@ The [`testing/`](testing/) directory contains an automated testing harness for f
 
 | Type | `mode` | Dataset file | What the model must do | Tasks |
 | :--- | :--- | :--- | :--- | :---: |
-| **Generating new code** | `generate` | [`tasks/tasks_code_generation.json`](testing/tasks/tasks_code_generation.json) | Write a new standalone program from natural-language spec. | 20 |
-| **Fixing Bugs / Issues** | `fix_bugs` | [`tasks/task_bug_issues.json`](testing/tasks/task_bug_issues.json) | Locate and repair bugs in existing multi-language programs. | 10 |
+| **Generating new code** | `generate` | [`tasks/tasks_code_generation.json`](testing/tasks/tasks_code_generation.json) | Write a new standalone program from natural-language spec; 15 tasks per difficulty. | 45 |
+| **Fixing Bugs / Issues** | `fix_bugs` | [`tasks/task_bug_issues.json`](testing/tasks/task_bug_issues.json) | Locate and repair bugs in existing multi-language programs; 11 tasks per difficulty. | 33 |
 
 ### Running Automated Tests
 

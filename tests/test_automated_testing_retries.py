@@ -82,6 +82,82 @@ def test_evaluate_model_on_tasks_recovers_on_retry():
     assert mock_bot.ask.call_count == 2
 
 
+def test_training_uses_sample_verified_retry_code_after_initial_failure():
+    task = {
+        "id": "task_recovery",
+        "title": "Add Two",
+        "language": "python",
+        "task": "Print the sum of two numbers",
+        "input": "2 3",
+        "expected_output": "5\n",
+    }
+    mock_bot = MagicMock()
+    mock_bot.ask.side_effect = [
+        "```python\nprint(0)\n```",
+        "```python\nprint(5)\n```",
+    ]
+    mock_bot.submit_correction.return_value = {
+        "ok": True, "recorded": True, "learning_active": True
+    }
+    mock_executor = MagicMock(spec=CodeExecutor)
+    mock_executor.execute_code.side_effect = [
+        ExecutionResult(stdout="0\n", stderr="", output="0\n", exit_code=0, duration_ms=1),
+        ExecutionResult(stdout="5\n", stderr="", output="5\n", exit_code=0, duration_ms=1),
+    ]
+
+    with patch("testing.automated_testing.JesseCodingBot", return_value=mock_bot):
+        report = evaluate_model_on_tasks(
+            tasks=[task],
+            model_name="jesse-prod",
+            executor=mock_executor,
+            retries=5,
+            train_model=True,
+        )
+
+    assert report["passed"] == 1
+    assert report["passed_initial"] == 0
+    assert report["trained_count"] == 1
+    result = report["tasks"][0]
+    assert result["training_source"] == "sample_verified_retry"
+    assert result["trained"] is True
+    assert result["feedback_recorded"] is True
+    assert "print(5)" in mock_bot.submit_correction.call_args.kwargs["correction"]
+
+
+def test_feedback_recorded_is_not_counted_as_active_training():
+    task = {
+        "id": "bug_feedback_only",
+        "title": "One",
+        "language": "python",
+        "task": "Print one",
+        "input": "",
+        "expected_output": "1\n",
+        "exact_code": "print(1)",
+    }
+    mock_bot = MagicMock()
+    mock_bot.ask.return_value = "```python\nprint(0)\n```"
+    mock_bot.submit_correction.return_value = {
+        "ok": True, "recorded": True, "learning_active": False
+    }
+    mock_executor = MagicMock(spec=CodeExecutor)
+    mock_executor.execute_code.return_value = ExecutionResult(
+        stdout="0\n", stderr="", output="0\n", exit_code=0, duration_ms=1
+    )
+
+    with patch("testing.automated_testing.JesseCodingBot", return_value=mock_bot):
+        report = evaluate_model_on_tasks(
+            tasks=[task], model_name="jesse-pristine", executor=mock_executor,
+            retries=0, train_model=True,
+        )
+
+    result = report["tasks"][0]
+    assert result["feedback_submitted"] is True
+    assert result["feedback_recorded"] is True
+    assert result["trained"] is False
+    assert report["feedback_recorded_count"] == 1
+    assert report["trained_count"] == 0
+
+
 def test_resolve_selected_models_defaults_to_single_model():
     from testing.automated_testing import build_argument_parser, resolve_selected_models
 
@@ -191,6 +267,60 @@ def test_evaluate_model_on_tasks_trains_on_failure_with_exact_code():
     assert "class Account:" in corr_arg
 
 
+def test_run_automated_testing_keeps_retry_toggle_separate_from_dataset_mode(tmp_path):
+    from testing.automated_testing import run_automated_testing
+
+    model_result = {
+        "model": "jesse-prod",
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "pass_rate_pct": 0.0,
+        "tasks": [],
+        "output_matching": "tolerant",
+    }
+    with patch(
+        "testing.automated_testing.evaluate_model_on_tasks",
+        return_value=model_result,
+    ) as evaluate:
+        result = run_automated_testing(
+            dataset="tasks_code_generation.json",
+            models=["jesse-prod"],
+            retries=5,
+            auto_repair=False,
+            output_dir=tmp_path,
+        )
+
+    assert result["dataset"] == "tasks_code_generation.json"
+    assert evaluate.call_args.kwargs["retries"] == 0
+    assert evaluate.call_args.kwargs["train_model"] is False
+
+
+def test_benchmark_datasets_have_balanced_difficulty_levels():
+    import json
+    from collections import Counter
+    from pathlib import Path
+
+    tasks_dir = Path(__file__).resolve().parents[1] / "testing" / "tasks"
+    expected_sizes = {
+        "tasks_code_generation.json": 45,
+        "task_bug_issues.json": 33,
+    }
+    for filename, expected_size in expected_sizes.items():
+        tasks = json.loads((tasks_dir / filename).read_text(encoding="utf-8"))
+        assert len(tasks) == expected_size
+        assert len({task["id"] for task in tasks}) == expected_size
+        assert Counter(task["difficulty"] for task in tasks) == {
+            "easy": expected_size // 3,
+            "medium": expected_size // 3,
+            "complex": expected_size // 3,
+        }
+        for task in tasks:
+            assert task["language"] in {"python", "cpp", "javascript"}
+            assert task["expected_output"]
+            if task["mode"] == "fix_bugs":
+                assert task.get("buggy_code")
+                assert task.get("exact_code")
 def test_evaluate_model_on_tasks_skips_train_when_passed():
     task = {
         "id": "bug_01",
@@ -290,4 +420,3 @@ def test_build_task_prompt_with_buggy_code():
     assert "Current (Buggy) Output:" in prompt
     assert "False" in prompt
     assert "Output ONLY the complete runnable program" in prompt
-

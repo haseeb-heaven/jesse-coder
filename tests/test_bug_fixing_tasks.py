@@ -26,6 +26,15 @@ TASKS = json.loads(TASKS_FILE.read_text(encoding="utf-8"))
 EXECUTOR = CodeExecutor()
 
 
+def buggy_program(task):
+    """Read buggy source from the structured field or legacy task Markdown."""
+    if task.get("buggy_code"):
+        return task["buggy_code"]
+    blocks = extract_code_blocks(task["task"])
+    assert len(blocks) == 1, f"{task['id']}: expected one buggy program"
+    return blocks[0].code
+
+
 def test_task_type_files_use_expected_modes():
     """The two task types are distinguished by the 'mode' field."""
     generation = json.loads(GENERATION_FILE.read_text(encoding="utf-8"))
@@ -43,16 +52,15 @@ def test_bug_task_set_metadata():
         assert task["language"] in ("python", "cpp", "javascript")
         assert task["difficulty"] in ("simple", "easy", "medium", "complex", "very complex", "hard")
         assert task["expected_output"].strip(), f"{task['id']}: missing expected output"
-        assert f"```{task['language']}" in task["task"], f"{task['id']}: buggy program not embedded"
+        assert task.get("buggy_code") or f"```{task['language']}" in task["task"], (
+            f"{task['id']}: buggy program is missing"
+        )
 
 
 @pytest.mark.parametrize("task", TASKS, ids=[task["id"] for task in TASKS])
 def test_buggy_program_does_not_match_expected_output(task):
-    blocks = extract_code_blocks(task["task"])
-    assert len(blocks) == 1, f"{task['id']}: expected exactly one fenced buggy program"
-
     result = EXECUTOR.execute_code(
-        code=blocks[0].code,
+        code=buggy_program(task),
         language=task["language"],
         stdin_data=task.get("input", ""),
         timeout=10.0,
@@ -69,8 +77,7 @@ def test_buggy_program_does_not_match_expected_output(task):
 @pytest.mark.parametrize("task", TASKS, ids=[task["id"] for task in TASKS])
 def test_buggy_program_is_small(task):
     """The tasks must stay small: concise functions/classes."""
-    blocks = extract_code_blocks(task["task"])
-    assert len(blocks[0].code.splitlines()) <= 100, f"{task['id']}: program too large"
+    assert len(buggy_program(task).splitlines()) <= 100, f"{task['id']}: program too large"
 
 
 @pytest.mark.parametrize("task", TASKS, ids=[task["id"] for task in TASKS])

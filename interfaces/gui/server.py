@@ -559,8 +559,8 @@ class TestingRunRequest(BaseModel):
     dataset: Optional[str] = Field(default="task_bug_issues.json", description="Target dataset name or path")
     task_id: Optional[str] = Field(default=None, description="Optional single task ID filter (e.g. bug_01)")
     model: Optional[str] = Field(default="jesse-prod", description="Jesse model name or 'all'")
-    retries: int = Field(default=5, ge=0, le=10, description="Max repair retries (minimum 3 if enabled)")
-    repair: bool = Field(default=True, description="Enable self-healing auto-repair mode")
+    retries: int = Field(default=5, ge=0, le=10, description="Requested retry limit; enabled retry counts are raised to at least 3")
+    repair: bool = Field(default=True, description="Retry failed benchmark tasks with repair prompts")
     train_model: bool = Field(default=False, description="Submit failed code corrections via /feedback")
     strict_output: bool = Field(default=False, description="Strict exact-match output validation")
     language: Optional[str] = Field(default=None, description="Filter tasks by language")
@@ -685,23 +685,33 @@ async def query_documents(req: DocumentQueryRequest, request: Request) -> Dict[s
 @app.get("/api/testing/datasets")
 async def list_testing_datasets() -> Dict[str, Any]:
     """List available benchmark datasets with task counts and metadata."""
+    from testing.automated_testing import DATASET_BUG_ISSUES, DATASET_CODE_GENERATION
+
+    def dataset_info(path: Path, name: str, description: str, mode: str) -> Dict[str, Any]:
+        with open(path, "r", encoding="utf-8") as f:
+            tasks = json.load(f)
+        counts: Dict[str, int] = {}
+        for task in tasks:
+            difficulty = str(task.get("difficulty", "unspecified")).lower()
+            counts[difficulty] = counts.get(difficulty, 0) + 1
+        distribution = ", ".join(
+            f"{label.title()} ({counts[label]})"
+            for label in ("easy", "medium", "complex")
+            if counts.get(label)
+        )
+        return {
+            "id": path.name,
+            "name": name,
+            "description": f"{len(tasks)} tasks across {distribution}.",
+            "filename": path.name,
+            "task_count": len(tasks),
+            "difficulty_counts": counts,
+            "mode": mode,
+        }
+
     datasets = [
-        {
-            "id": "task_bug_issues.json",
-            "name": "Fixing Bugs / Issues",
-            "description": "24 multi-language bug-fixing tasks (Python, C++, JavaScript) across Easy (8), Medium (8), and Very Complex (8).",
-            "filename": "task_bug_issues.json",
-            "task_count": 24,
-            "mode": "fix_bugs",
-        },
-        {
-            "id": "tasks_code_generation.json",
-            "name": "Generating New Code",
-            "description": "30 algorithmic and system programming tasks across Easy (10), Medium (10), and Very Complex (10).",
-            "filename": "tasks_code_generation.json",
-            "task_count": 30,
-            "mode": "generate",
-        },
+        dataset_info(DATASET_BUG_ISSUES, "Fixing Bugs / Issues", "Multi-language bug-fixing benchmark", "fix_bugs"),
+        dataset_info(DATASET_CODE_GENERATION, "Generating New Code", "Multi-language code-generation benchmark", "generate"),
     ]
     return {"status": "ok", "datasets": datasets}
 
@@ -764,7 +774,6 @@ async def run_testing_benchmark(req: TestingRunRequest, request: Request) -> Dic
             run_automated_testing,
             tasks_file=req.dataset,
             dataset=req.dataset,
-            repair=req.repair,
             models=target_models,
             task_id_filter=req.task_id,
             difficulty_filter=req.difficulty,
@@ -772,6 +781,7 @@ async def run_testing_benchmark(req: TestingRunRequest, request: Request) -> Dic
             strict_output=req.strict_output,
             retries=req.retries,
             train_model=req.train_model,
+            auto_repair=req.repair,
         )
         return res
     except Exception as exc:
@@ -852,4 +862,3 @@ async def serve_index() -> FileResponse:
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="Frontend index.html not found. Please build frontend first.")
     return FileResponse(str(index_path))
-

@@ -754,17 +754,17 @@
           <div>
             <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Dataset</label>
             <select id="bench-dataset-select" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
-              <option value="task_bug_issues.json">🐛 Fixing Bugs / Issues (24 tasks: Easy, Med, Complex)</option>
-              <option value="tasks_code_generation.json">⚡ Generating New Code (30 tasks: Easy, Med, Complex)</option>
+              <option value="task_bug_issues.json">🐛 Fixing Bugs / Issues</option>
+              <option value="tasks_code_generation.json">⚡ Generating New Code</option>
             </select>
           </div>
           <div>
             <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Complexity Level</label>
             <select id="bench-difficulty-select" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
-              <option value="">All Complexity Levels (Easy, Medium, Very Complex)</option>
+              <option value="">All Complexity Levels (Easy, Medium, Complex)</option>
               <option value="easy">🟢 Easy Tasks</option>
               <option value="medium">🟡 Medium Tasks</option>
-              <option value="complex">🔴 Very Complex Tasks</option>
+              <option value="complex">🔴 Complex Tasks</option>
             </select>
           </div>
           <div>
@@ -782,14 +782,27 @@
               <option value="">All Tasks in Dataset</option>
             </select>
           </div>
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Language Filter</label>
+            <select id="bench-language-select" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+              <option value="">All languages</option>
+              <option value="python">Python</option>
+              <option value="cpp">C++</option>
+              <option value="javascript">JavaScript</option>
+            </select>
+          </div>
           <div class="md:col-span-2">
             <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Max Retries</label>
             <select id="bench-retries-select" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-600 dark:text-amber-400 font-bold focus:outline-none focus:border-amber-500">
-              <option value="1">1 retry</option>
-              <option value="2">2 retries</option>
+              <option value="0">0 retries</option>
               <option value="3">3 retries</option>
               <option value="4">4 retries</option>
               <option value="5" selected>5 retries (Recommended)</option>
+              <option value="6">6 retries</option>
+              <option value="7">7 retries</option>
+              <option value="8">8 retries</option>
+              <option value="9">9 retries</option>
+              <option value="10">10 retries</option>
             </select>
           </div>
           <div class="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
@@ -797,12 +810,17 @@
               <label class="flex items-center gap-1.5 cursor-pointer">
                 <input type="checkbox" id="bench-repair-toggle" class="sr-only peer" checked />
                 <div class="w-6 h-3.5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-amber-500 relative"></div>
-                <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-amber-500 font-semibold">Repair Mode</span>
+                <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-amber-500 font-semibold">Auto-repair failed tasks</span>
               </label>
               <label class="flex items-center gap-1.5 cursor-pointer">
                 <input type="checkbox" id="bench-train-toggle" class="sr-only peer" />
                 <div class="w-6 h-3.5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-cyan-500 relative"></div>
                 <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-cyan-500 font-semibold">Train on Failure (/feedback)</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" id="bench-strict-output-toggle" class="sr-only peer" />
+                <div class="w-6 h-3.5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-violet-500 relative"></div>
+                <span class="text-xs font-mono text-slate-600 dark:text-slate-400 peer-checked:text-violet-500 font-semibold">Exact output matching</span>
               </label>
             </div>
             <button id="btn-run-benchmark" class="flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-mono text-xs font-bold shadow-lg transition">
@@ -844,8 +862,8 @@
             <div class="flex items-center gap-1.5">
               <span class="text-xs font-mono text-slate-500">Dataset:</span>
               <select id="bench-explore-dataset" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none">
-                <option value="task_bug_issues.json">Fixing Bugs / Issues (24 tasks)</option>
-                <option value="tasks_code_generation.json">Generating New Code (30 tasks)</option>
+                <option value="task_bug_issues.json">Fixing Bugs / Issues</option>
+                <option value="tasks_code_generation.json">Generating New Code</option>
               </select>
             </div>
             <div class="flex items-center gap-1.5">
@@ -854,11 +872,11 @@
                 <option value="">All Levels</option>
                 <option value="easy">🟢 Easy</option>
                 <option value="medium">🟡 Medium</option>
-                <option value="complex">🔴 Very Complex</option>
+                <option value="complex">🔴 Complex</option>
               </select>
             </div>
           </div>
-          <span id="bench-tasks-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">24 tasks</span>
+          <span id="bench-tasks-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">33 tasks</span>
         </div>
         <div id="bench-explore-tasks-list" class="space-y-3 text-xs font-mono"></div>
       </div>

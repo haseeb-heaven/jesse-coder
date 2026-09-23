@@ -252,6 +252,10 @@ class JesseCoderApp {
       await this.syncBenchmarkTaskDropdown();
     });
 
+    document.getElementById('bench-language-select')?.addEventListener('change', async () => {
+      await this.syncBenchmarkTaskDropdown();
+    });
+
     document.getElementById('bench-explore-dataset')?.addEventListener('change', async () => {
       await this.loadBenchmarkTasks();
     });
@@ -770,10 +774,12 @@ ${diagnostic}
   private async syncBenchmarkTaskDropdown(): Promise<void> {
     const sel = document.getElementById('bench-dataset-select') as HTMLSelectElement | null;
     const diffSel = document.getElementById('bench-difficulty-select') as HTMLSelectElement | null;
+    const languageSel = document.getElementById('bench-language-select') as HTMLSelectElement | null;
     const dataset = sel?.value || 'task_bug_issues.json';
     const difficulty = diffSel?.value || undefined;
+    const language = languageSel?.value || undefined;
     try {
-      const tasks = await api.fetchTestingTasks(dataset, undefined, difficulty);
+      const tasks = await api.fetchTestingTasks(dataset, language, difficulty);
       this.ui.populateBenchmarkTaskFilters(tasks);
     } catch (err: any) {
       console.warn('Failed to populate task filter dropdown:', err);
@@ -829,12 +835,15 @@ ${task.expected_output.trim()}`;
     const retriesSel = document.getElementById('bench-retries-select') as HTMLSelectElement | null;
     const repairToggle = document.getElementById('bench-repair-toggle') as HTMLInputElement | null;
     const trainToggle = document.getElementById('bench-train-toggle') as HTMLInputElement | null;
+    const strictToggle = document.getElementById('bench-strict-output-toggle') as HTMLInputElement | null;
+    const languageSel = document.getElementById('bench-language-select') as HTMLSelectElement | null;
 
     const dataset = datasetSel?.value || 'task_bug_issues.json';
     const difficulty = diffSel?.value || undefined;
     const model = modelSel?.value || 'jesse-prod';
     const taskId = taskFilter?.value || undefined;
-    const retries = parseInt(retriesSel?.value || '5', 10) || 5;
+    const retriesValue = parseInt(retriesSel?.value || '5', 10);
+    const retries = Number.isFinite(retriesValue) ? retriesValue : 5;
     const repair = repairToggle ? repairToggle.checked : true;
     const trainModel = trainToggle ? trainToggle.checked : false;
 
@@ -851,6 +860,8 @@ ${task.expected_output.trim()}`;
         retries,
         repair,
         train_model: trainModel,
+        strict_output: strictToggle?.checked || false,
+        language: languageSel?.value || undefined,
       });
 
       this.ui.renderBenchmarkResults(resp);
