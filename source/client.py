@@ -8,6 +8,9 @@ Also exposes non-chat Jesse REST endpoints: feedback, memory, and documents.
 from __future__ import annotations
 
 import logging
+import hashlib
+import threading
+import time
 from typing import Any, Dict, Iterator, List, Optional
 import httpx
 import openai
@@ -39,6 +42,48 @@ except ImportError:
 logger = logging.getLogger("jesse_coder.client")
 
 
+class PerKeyRequestPacer:
+    """Keep requests for one API key at least ``interval_seconds`` apart."""
+
+    def __init__(
+        self,
+        key_fingerprint: str,
+        interval_seconds: float = 0.2,
+        monotonic=time.monotonic,
+        sleep=time.sleep,
+    ) -> None:
+        self.key_fingerprint = key_fingerprint
+        self.interval_seconds = interval_seconds
+        self._monotonic = monotonic
+        self._sleep = sleep
+        self._lock = threading.Lock()
+        self._next_request_at = 0.0
+
+    def wait(self) -> None:
+        """Reserve a request slot, serializing callers that use the same key."""
+        with self._lock:
+            delay = self._next_request_at - self._monotonic()
+            if delay > 0:
+                self._sleep(delay)
+            self._next_request_at = self._monotonic() + self.interval_seconds
+
+
+_PACERS_BY_KEY: Dict[str, PerKeyRequestPacer] = {}
+_PACERS_LOCK = threading.Lock()
+
+
+def _pacer_for_api_key(api_key: str) -> PerKeyRequestPacer:
+    # Keep only a one-way fingerprint in process memory rather than retaining
+    # credentials in the global registry.
+    fingerprint = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    with _PACERS_LOCK:
+        pacer = _PACERS_BY_KEY.get(fingerprint)
+        if pacer is None:
+            pacer = PerKeyRequestPacer(fingerprint)
+            _PACERS_BY_KEY[fingerprint] = pacer
+        return pacer
+
+
 class JesseClient:
     """
     Client wrapper for Jesse's OpenAI-compatible API endpoint.
@@ -52,12 +97,22 @@ class JesseClient:
         # Root URL without trailing slash, used by REST helpers
         self._base_url = self.config.base_url.strip().rstrip('/')
         self._api_key = self.config.api_key.strip()
+        self._request_pacer = _pacer_for_api_key(self._api_key)
+        request_hooks = {"request": [lambda _request: self._request_pacer.wait()]}
+
+        # Install the same per-key pacer in both HTTP transports. The OpenAI
+        # transport hook runs for every wire attempt, including SDK retries.
+        openai_http = httpx.Client(
+            timeout=self.config.timeout,
+            event_hooks=request_hooks,
+        )
 
         self._client = OpenAI(
             base_url=self._base_url,
             api_key=self._api_key,
             timeout=self.config.timeout,
             max_retries=self.config.max_retries,
+            http_client=openai_http,
         )
 
         # Shared httpx client for non-chat REST endpoints
@@ -65,6 +120,7 @@ class JesseClient:
             base_url=self._base_url,
             headers={"Authorization": f"Bearer {self._api_key}"},
             timeout=30.0,
+            event_hooks=request_hooks,
         )
         self.last_message_id: Optional[str] = None
 

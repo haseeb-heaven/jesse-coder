@@ -22,9 +22,9 @@ testing/
 The suite is organized into **2 official datasets** located in `testing/tasks/`:
 
 1. **Generating New Code**: [`tasks/tasks_code_generation.json`](tasks/tasks_code_generation.json) (`mode: generate`)
-   - 20 algorithmic coding tasks written from a natural-language specification (14 `python`, 3 `cpp`, 3 `javascript`).
+   - 45 algorithmic coding tasks written from natural-language specifications (25 `python`, 10 `cpp`, 10 `javascript`), split evenly across easy, medium, and complex.
 2. **Fixing Bugs / Issues in Code**: [`tasks/task_bug_issues.json`](tasks/task_bug_issues.json) (`mode: fix_bugs` / `repair`)
-   - 10 multi-language bug-fixing tasks (`python`, `cpp`, `javascript`).
+   - 33 multi-language bug-fixing tasks (`python`, `cpp`, `javascript`), split evenly across easy, medium, and complex.
    - Each task embeds a small buggy program, sample inputs, expected outputs, and verified `exact_code` / `fixed_code`.
 
 ## How to Run Automated Testing
@@ -107,3 +107,9 @@ Use `--strict-output` to require an exact one-to-one `stdout` match instead:
 ```bash
 python3 testing/automated_testing.py --strict-output
 ```
+
+## API Request Pacing
+
+The Jesse API allows **5 requests per second per API key**, so requests must be spaced at least **200 ms apart**. There is no daily cap. `JesseClient` applies this pacing across chat, streaming, feedback, and other REST requests, including SDK wire retries, and shares the pacing state across client instances for the same key within one process. This local pacing does not replace the service's account-wide rate enforcement across separate processes.
+
+The client pacing behavior is covered by `tests/test_client.py`; those tests use a fake clock and mock HTTP transport and do not make live API calls.

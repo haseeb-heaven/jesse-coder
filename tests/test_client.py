@@ -6,6 +6,7 @@ import openai
 import httpx
 
 from jesse_coder.client import JesseClient
+from jesse_coder.client import PerKeyRequestPacer
 from jesse_coder.config import JesseConfig
 from jesse_coder.exceptions import (
     JesseAuthenticationError,
@@ -21,6 +22,98 @@ from jesse_coder.exceptions import (
 def mock_client():
     cfg = JesseConfig(api_key="test_key", base_url="https://jesse.solidsf.com/api/v1")
     return JesseClient(config=cfg)
+
+
+def test_request_pacer_spaces_six_requests_for_one_key_by_200ms():
+    now = [0.0]
+    starts = []
+
+    def fake_sleep(delay):
+        now[0] += delay
+
+    pacer = PerKeyRequestPacer(
+        key_fingerprint="same-key",
+        interval_seconds=0.2,
+        monotonic=lambda: now[0],
+        sleep=fake_sleep,
+    )
+
+    for _ in range(6):
+        pacer.wait()
+        starts.append(now[0])
+
+    assert starts == pytest.approx([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    assert all(right - left >= 0.2 - 1e-9 for left, right in zip(starts, starts[1:]))
+
+
+def test_request_pacer_does_not_share_slots_between_different_keys():
+    now = [0.0]
+
+    def fake_sleep(delay):
+        now[0] += delay
+
+    first_key = PerKeyRequestPacer("key-a", 0.2, lambda: now[0], fake_sleep)
+    second_key = PerKeyRequestPacer("key-b", 0.2, lambda: now[0], fake_sleep)
+
+    first_key.wait()
+    first_key.wait()
+    second_key.wait()
+
+    assert now[0] == pytest.approx(0.2)
+
+
+def test_chat_requests_from_separate_clients_share_per_key_pacing(monkeypatch):
+    now = [0.0]
+    starts = []
+
+    def fake_sleep(delay):
+        now[0] += delay
+
+    def handler(request):
+        starts.append(now[0])
+        if request.url.path.endswith("/feedback"):
+            return httpx.Response(200, json={"recorded": True})
+        return httpx.Response(
+            200,
+            json={
+                "id": "chatcmpl-test",
+                "object": "chat.completion",
+                "created": 1,
+                "model": "jesse-prod",
+                "choices": [{
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "ok"},
+                    "finish_reason": "stop",
+                }],
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    config = JesseConfig(
+        api_key="pacing-integration-test-key",
+        base_url="https://jesse.test/api/v1",
+        max_retries=0,
+    )
+    first_client = JesseClient(config=config)
+    second_client = JesseClient(config=config)
+    first_client._client._client._transport = transport
+    second_client._client._client._transport = transport
+    first_client._http._transport = transport
+    second_client._http._transport = transport
+    pacer = first_client._request_pacer
+    pacer._monotonic = lambda: now[0]
+    pacer._sleep = fake_sleep
+
+    try:
+        first_client.chat([{"role": "user", "content": "first"}])
+        second_client.submit_feedback(message_id="msg-test", rating="thumbs_down")
+        second_client.chat([{"role": "user", "content": "third"}])
+    finally:
+        first_client.close()
+        second_client.close()
+
+    assert starts == pytest.approx([0.0, 0.2, 0.4])
 
 
 def test_authentication_error_mapping(mock_client):
