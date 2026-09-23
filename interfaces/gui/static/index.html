@@ -754,8 +754,17 @@
           <div>
             <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Dataset</label>
             <select id="bench-dataset-select" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
-              <option value="task_bug_issues.json">🐛 Fixing Bugs / Issues (10 tasks)</option>
-              <option value="tasks_code_generation.json">⚡ Generating New Code (20 tasks)</option>
+              <option value="task_bug_issues.json">🐛 Fixing Bugs / Issues (24 tasks: Easy, Med, Complex)</option>
+              <option value="tasks_code_generation.json">⚡ Generating New Code (30 tasks: Easy, Med, Complex)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Complexity Level</label>
+            <select id="bench-difficulty-select" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+              <option value="">All Complexity Levels (Easy, Medium, Very Complex)</option>
+              <option value="easy">🟢 Easy Tasks</option>
+              <option value="medium">🟡 Medium Tasks</option>
+              <option value="complex">🔴 Very Complex Tasks</option>
             </select>
           </div>
           <div>
@@ -773,7 +782,7 @@
               <option value="">All Tasks in Dataset</option>
             </select>
           </div>
-          <div>
+          <div class="md:col-span-2">
             <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Max Retries</label>
             <select id="bench-retries-select" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-600 dark:text-amber-400 font-bold focus:outline-none focus:border-amber-500">
               <option value="1">1 retry</option>
@@ -830,15 +839,26 @@
 
       <!-- Tab Content 2: Explore Tasks -->
       <div id="bench-panel-tasks" class="bench-panel hidden flex-1 overflow-auto p-5 space-y-3">
-        <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-mono text-slate-500">Select Dataset:</span>
-            <select id="bench-explore-dataset" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none">
-              <option value="task_bug_issues.json">Fixing Bugs / Issues (10 tasks)</option>
-              <option value="tasks_code_generation.json">Generating New Code (20 tasks)</option>
-            </select>
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-mono text-slate-500">Dataset:</span>
+              <select id="bench-explore-dataset" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none">
+                <option value="task_bug_issues.json">Fixing Bugs / Issues (24 tasks)</option>
+                <option value="tasks_code_generation.json">Generating New Code (30 tasks)</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-mono text-slate-500">Complexity:</span>
+              <select id="bench-explore-difficulty" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none">
+                <option value="">All Levels</option>
+                <option value="easy">🟢 Easy</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="complex">🔴 Very Complex</option>
+              </select>
+            </div>
           </div>
-          <span id="bench-tasks-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">10 tasks</span>
+          <span id="bench-tasks-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">24 tasks</span>
         </div>
         <div id="bench-explore-tasks-list" class="space-y-3 text-xs font-mono"></div>
       </div>

@@ -1132,6 +1132,16 @@ export class UIController {
 
       const isBug = !!t.buggy_code;
       const langColor = t.language === 'python' ? 'text-amber-500' : (t.language === 'cpp' ? 'text-blue-500' : 'text-yellow-500');
+      const diff = (t.difficulty || 'medium').toLowerCase();
+      let diffBadge = '';
+      if (diff === 'easy' || diff === 'simple') {
+        diffBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 font-mono font-bold border border-emerald-300 dark:border-emerald-800">🟢 Easy</span>';
+      } else if (diff === 'complex' || diff === 'hard' || diff.includes('complex')) {
+        diffBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-mono font-bold border border-rose-300 dark:border-rose-800">🔴 Very Complex</span>';
+      } else {
+        diffBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 font-mono font-bold border border-amber-300 dark:border-amber-800">🟡 Medium</span>';
+      }
+      const desc = (t as any).task || t.description || '';
 
       card.innerHTML = `
         <div class="flex items-center justify-between gap-2">
@@ -1139,6 +1149,7 @@ export class UIController {
             <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isBug ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800' : 'bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800'}">
               ${isBug ? 'Fix Bug' : 'Generate'}
             </span>
+            ${diffBadge}
             <span class="font-bold text-slate-900 dark:text-slate-100">${escapeHtml(t.id)}: ${escapeHtml(t.title)}</span>
             <span class="text-[10px] ${langColor} font-mono uppercase font-bold">${escapeHtml(t.language)}</span>
           </div>
@@ -1147,7 +1158,7 @@ export class UIController {
             <span>Load in Chat</span>
           </button>
         </div>
-        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">${escapeHtml(t.description || '')}</p>
+        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">${escapeHtml(desc)}</p>
         ${t.buggy_code ? `
           <div class="mt-2 text-[10px] rounded-lg bg-slate-100 dark:bg-slate-950 p-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-mono whitespace-pre overflow-x-auto max-h-36">
             <div class="text-rose-500 font-bold mb-1">// Buggy Code:</div>${escapeHtml(t.buggy_code)}

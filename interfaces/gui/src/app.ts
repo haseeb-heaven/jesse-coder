@@ -248,7 +248,15 @@ class JesseCoderApp {
       await this.syncBenchmarkTaskDropdown();
     });
 
+    document.getElementById('bench-difficulty-select')?.addEventListener('change', async () => {
+      await this.syncBenchmarkTaskDropdown();
+    });
+
     document.getElementById('bench-explore-dataset')?.addEventListener('change', async () => {
+      await this.loadBenchmarkTasks();
+    });
+
+    document.getElementById('bench-explore-difficulty')?.addEventListener('change', async () => {
       await this.loadBenchmarkTasks();
     });
 
@@ -761,9 +769,11 @@ ${diagnostic}
 
   private async syncBenchmarkTaskDropdown(): Promise<void> {
     const sel = document.getElementById('bench-dataset-select') as HTMLSelectElement | null;
+    const diffSel = document.getElementById('bench-difficulty-select') as HTMLSelectElement | null;
     const dataset = sel?.value || 'task_bug_issues.json';
+    const difficulty = diffSel?.value || undefined;
     try {
-      const tasks = await api.fetchTestingTasks(dataset);
+      const tasks = await api.fetchTestingTasks(dataset, undefined, difficulty);
       this.ui.populateBenchmarkTaskFilters(tasks);
     } catch (err: any) {
       console.warn('Failed to populate task filter dropdown:', err);
@@ -772,9 +782,11 @@ ${diagnostic}
 
   private async loadBenchmarkTasks(): Promise<void> {
     const sel = document.getElementById('bench-explore-dataset') as HTMLSelectElement | null;
+    const diffSel = document.getElementById('bench-explore-difficulty') as HTMLSelectElement | null;
     const dataset = sel?.value || 'task_bug_issues.json';
+    const difficulty = diffSel?.value || undefined;
     try {
-      const tasks = await api.fetchTestingTasks(dataset);
+      const tasks = await api.fetchTestingTasks(dataset, undefined, difficulty);
       this.ui.renderExploreTasks(tasks, (task) => this.handleLoadTaskIntoChat(task));
     } catch (err: any) {
       this.ui.showToast(`Failed to load tasks: ${err.message}`, true);
@@ -783,6 +795,7 @@ ${diagnostic}
 
   private handleLoadTaskIntoChat(task: TestingTask): void {
     let prompt = '';
+    const desc = (task as any).task || task.description || '';
     if (task.buggy_code) {
       prompt = `Fix the bug in the following ${task.language} code so that it produces the expected output.
 
@@ -794,7 +807,7 @@ ${task.buggy_code.trim()}
 ${task.buggy_output ? `Buggy Output:\n${task.buggy_output.trim()}\n\n` : ''}Expected Output:
 ${task.expected_output.trim()}`;
     } else {
-      prompt = `${task.description}
+      prompt = `${desc}
 
 ${task.input ? `Input:\n${task.input.trim()}\n\n` : ''}Expected Output:
 ${task.expected_output.trim()}`;
@@ -810,6 +823,7 @@ ${task.expected_output.trim()}`;
 
   private async handleRunBenchmark(): Promise<void> {
     const datasetSel = document.getElementById('bench-dataset-select') as HTMLSelectElement | null;
+    const diffSel = document.getElementById('bench-difficulty-select') as HTMLSelectElement | null;
     const modelSel = document.getElementById('bench-model-select') as HTMLSelectElement | null;
     const taskFilter = document.getElementById('bench-task-filter') as HTMLSelectElement | null;
     const retriesSel = document.getElementById('bench-retries-select') as HTMLSelectElement | null;
@@ -817,6 +831,7 @@ ${task.expected_output.trim()}`;
     const trainToggle = document.getElementById('bench-train-toggle') as HTMLInputElement | null;
 
     const dataset = datasetSel?.value || 'task_bug_issues.json';
+    const difficulty = diffSel?.value || undefined;
     const model = modelSel?.value || 'jesse-prod';
     const taskId = taskFilter?.value || undefined;
     const retries = parseInt(retriesSel?.value || '5', 10) || 5;
@@ -824,13 +839,15 @@ ${task.expected_output.trim()}`;
     const trainModel = trainToggle ? trainToggle.checked : false;
 
     this.ui.setBenchmarkRunning(true);
-    this.ui.showToast(`▶ Running benchmark on ${dataset}...`, false);
+    const diffLabel = difficulty ? ` [${difficulty.toUpperCase()}]` : '';
+    this.ui.showToast(`▶ Running benchmark on ${dataset}${diffLabel}...`, false);
 
     try {
       const resp = await api.runTestingBenchmark({
         dataset,
         model,
         task_id: taskId,
+        difficulty,
         retries,
         repair,
         train_model: trainModel,

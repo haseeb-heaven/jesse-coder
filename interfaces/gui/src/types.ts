@@ -194,6 +194,7 @@ export interface TestingTask {
   description: string;
   language: string;
   mode?: string;
+  difficulty?: string;
   buggy_code?: string;
   buggy_output?: string;
   expected_output: string;
@@ -205,6 +206,7 @@ export interface TestingTask {
 export interface TestingRunParams {
   dataset?: string;
   task_id?: string;
+  difficulty?: string;
   model?: string;
   retries?: number;
   repair?: boolean;

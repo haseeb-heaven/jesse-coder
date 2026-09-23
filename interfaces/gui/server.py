@@ -564,6 +564,7 @@ class TestingRunRequest(BaseModel):
     train_model: bool = Field(default=False, description="Submit failed code corrections via /feedback")
     strict_output: bool = Field(default=False, description="Strict exact-match output validation")
     language: Optional[str] = Field(default=None, description="Filter tasks by language")
+    difficulty: Optional[str] = Field(default=None, description="Filter tasks by complexity: easy, medium, complex")
 
 
 
@@ -688,17 +689,17 @@ async def list_testing_datasets() -> Dict[str, Any]:
         {
             "id": "task_bug_issues.json",
             "name": "Fixing Bugs / Issues",
-            "description": "10 multi-language bug-fixing tasks (Python, C++, JavaScript) with verified buggy code and fixes.",
+            "description": "24 multi-language bug-fixing tasks (Python, C++, JavaScript) across Easy (8), Medium (8), and Very Complex (8).",
             "filename": "task_bug_issues.json",
-            "task_count": 10,
+            "task_count": 24,
             "mode": "fix_bugs",
         },
         {
             "id": "tasks_code_generation.json",
             "name": "Generating New Code",
-            "description": "20 algorithmic and system programming tasks across Python, C++, Go, Rust, and JavaScript.",
+            "description": "30 algorithmic and system programming tasks across Easy (10), Medium (10), and Very Complex (10).",
             "filename": "tasks_code_generation.json",
-            "task_count": 20,
+            "task_count": 30,
             "mode": "generate",
         },
     ]
@@ -709,6 +710,7 @@ async def list_testing_datasets() -> Dict[str, Any]:
 async def get_testing_tasks(
     dataset: str = "task_bug_issues.json",
     language: Optional[str] = None,
+    difficulty: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Retrieve all tasks from a benchmark dataset in testing/tasks/."""
     from testing.automated_testing import resolve_tasks_path
@@ -720,6 +722,15 @@ async def get_testing_tasks(
             tasks = json.load(f)
         if language:
             tasks = [t for t in tasks if t.get("language", "").lower() == language.lower()]
+        if difficulty and difficulty.strip().lower() not in ("", "all"):
+            diff_target = difficulty.strip().lower()
+            if diff_target in ("simple", "easy"):
+                valid_diffs = {"simple", "easy"}
+            elif diff_target in ("hard", "complex", "very complex", "very_complex"):
+                valid_diffs = {"hard", "complex", "very complex", "very_complex"}
+            else:
+                valid_diffs = {diff_target}
+            tasks = [t for t in tasks if str(t.get("difficulty", "")).lower() in valid_diffs]
         return {"status": "ok", "dataset": tasks_path.name, "count": len(tasks), "tasks": tasks}
     except HTTPException:
         raise
@@ -756,6 +767,7 @@ async def run_testing_benchmark(req: TestingRunRequest, request: Request) -> Dic
             repair=req.repair,
             models=target_models,
             task_id_filter=req.task_id,
+            difficulty_filter=req.difficulty,
             language_filter=req.language,
             strict_output=req.strict_output,
             retries=req.retries,

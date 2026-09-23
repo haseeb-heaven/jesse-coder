@@ -142,17 +142,31 @@ def test_testing_datasets_endpoint(client):
 
 
 def test_testing_tasks_endpoint(client):
-    """Test /api/testing/tasks returns tasks from task_bug_issues.json."""
+    """Test /api/testing/tasks returns tasks from task_bug_issues.json with difficulty filtering."""
     res = client.get("/api/testing/tasks?dataset=task_bug_issues.json")
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "ok"
-    assert data["count"] == 10
-    assert len(data["tasks"]) == 10
+    assert data["count"] >= 10
+    assert len(data["tasks"]) == data["count"]
     task_0 = data["tasks"][0]
     assert "id" in task_0
     assert "buggy_code" in task_0
     assert "expected_output" in task_0
+    assert "difficulty" in task_0
+
+    # Test filtering by complexity
+    res_easy = client.get("/api/testing/tasks?dataset=task_bug_issues.json&difficulty=easy")
+    assert res_easy.status_code == 200
+    data_easy = res_easy.json()
+    assert data_easy["count"] > 0
+    assert all(t["difficulty"] == "easy" for t in data_easy["tasks"])
+
+    res_complex = client.get("/api/testing/tasks?dataset=task_bug_issues.json&difficulty=complex")
+    assert res_complex.status_code == 200
+    data_complex = res_complex.json()
+    assert data_complex["count"] > 0
+    assert all(t["difficulty"] == "complex" for t in data_complex["tasks"])
 
 
 def test_testing_reports_endpoints(client):

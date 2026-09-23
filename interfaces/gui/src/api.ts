@@ -346,10 +346,17 @@ export async function fetchTestingDatasets(): Promise<TestingDataset[]> {
   return data.datasets || [];
 }
 
-export async function fetchTestingTasks(dataset: string = 'task_bug_issues.json', language?: string): Promise<TestingTask[]> {
+export async function fetchTestingTasks(
+  dataset: string = 'task_bug_issues.json',
+  language?: string,
+  difficulty?: string
+): Promise<TestingTask[]> {
   let url = `${API_BASE}/api/testing/tasks?dataset=${encodeURIComponent(dataset)}`;
   if (language) {
     url += `&language=${encodeURIComponent(language)}`;
+  }
+  if (difficulty && difficulty !== 'all') {
+    url += `&difficulty=${encodeURIComponent(difficulty)}`;
   }
   const resp = await fetch(url, {
     headers: getAuthHeaders(),
