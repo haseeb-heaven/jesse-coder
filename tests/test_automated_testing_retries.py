@@ -308,25 +308,21 @@ def test_run_automated_testing_keeps_retry_toggle_separate_from_dataset_mode(tmp
     assert evaluate.call_args.kwargs["train_model"] is False
 
 
-def test_benchmark_datasets_have_balanced_difficulty_levels():
+def test_benchmark_datasets_have_expected_difficulty_levels():
     import json
     from collections import Counter
     from pathlib import Path
 
     tasks_dir = Path(__file__).resolve().parents[1] / "testing" / "tasks"
-    expected_sizes = {
-        "tasks_code_generation.json": 45,
-        "task_bug_issues.json": 33,
+    expected_counts = {
+        "tasks_code_generation.json": {"easy": 15, "medium": 15, "complex": 18},
+        "task_bug_issues.json": {"easy": 11, "medium": 11, "complex": 13},
     }
-    for filename, expected_size in expected_sizes.items():
+    for filename, counts in expected_counts.items():
         tasks = json.loads((tasks_dir / filename).read_text(encoding="utf-8"))
-        assert len(tasks) == expected_size
-        assert len({task["id"] for task in tasks}) == expected_size
-        assert Counter(task["difficulty"] for task in tasks) == {
-            "easy": expected_size // 3,
-            "medium": expected_size // 3,
-            "complex": expected_size // 3,
-        }
+        assert len(tasks) == sum(counts.values())
+        assert len({task["id"] for task in tasks}) == len(tasks)
+        assert Counter(task["difficulty"] for task in tasks) == counts
         for task in tasks:
             assert task["language"] in {"python", "cpp", "javascript"}
             assert task["expected_output"]

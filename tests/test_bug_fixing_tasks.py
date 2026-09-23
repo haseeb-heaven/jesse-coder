@@ -43,6 +43,40 @@ def test_task_type_files_use_expected_modes():
     assert {task["mode"] for task in TASKS} == {TASK_MODE_FIX_BUGS}
 
 
+@pytest.mark.parametrize(
+    "task_id, extra_input, extra_output",
+    [
+        (
+            "task_46",
+            "2\n1 1\n2\n4 5\n2 0 0 0 0\n0 0 0 0 0\n0 0 0 0 0\n0 0 0 0 0\n",
+            "0\n35\n",
+        ),
+        (
+            "task_47",
+            "3 10\n1 2 3\nSNAP a\nADD 0 5\nSNAP a\nLOAD a\nADD 1 -2\nLOAD a\nROT -1\nHASH\nSUM 0 2\nHASH\n",
+            "26\n11\n26\n",
+        ),
+        (
+            "task_48",
+            "1\n4 4 5\n0 2 1 0\n2 3 4 1\n0 1 2 0\n1 3 3 1\n",
+            "5:0 1 3\n",
+        ),
+    ],
+)
+def test_new_generation_references_cover_sample_and_edge_cases(task_id, extra_input, extra_output):
+    generation = json.loads(GENERATION_FILE.read_text(encoding="utf-8"))
+    task = next(task for task in generation if task["id"] == task_id)
+    assert task["challenge_tier"] == "very_complex"
+    for stdin_data, expected in ((task["input"], task["expected_output"]), (extra_input, extra_output)):
+        result = EXECUTOR.execute_code(
+            code=task["exact_code"], language="python", stdin_data=stdin_data, timeout=10.0
+        )
+        assert result.is_success, f"{task_id}: {result.error or result.stderr}"
+        assert outputs_equivalent(expected, result.stdout), (
+            f"{task_id}: expected {expected!r}, got {result.stdout!r}"
+        )
+
+
 def test_bug_task_set_metadata():
     assert len(TASKS) >= 5
     ids = [task["id"] for task in TASKS]

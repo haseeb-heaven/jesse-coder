@@ -8,8 +8,8 @@ This directory contains the automated end-to-end task testing suite for JesseCod
 testing/
 ├── automated_testing.py   # Multi-model test runner with retries, repair mode & learning
 ├── tasks/                 # Benchmark task datasets (all JSON files stored here)
-│   ├── task_bug_issues.json       # Dataset 2: Fixing bugs/issues in code (33 tasks, mode: fix_bugs)
-│   ├── tasks_code_generation.json # Dataset 1: Generating new code (45 tasks, mode: generate)
+│   ├── task_bug_issues.json       # Dataset 2: Fixing bugs/issues in code (35 tasks, mode: fix_bugs)
+│   ├── tasks_code_generation.json # Dataset 1: Generating new code (48 tasks, mode: generate)
 │   ├── task_code_generation.json  # Alias to tasks_code_generation.json
 │   └── tasks_bug_fixing.json      # Alias to task_bug_issues.json
 ├── reports/               # Output directory where report JSON & Markdown files are written
@@ -22,9 +22,9 @@ testing/
 The suite is organized into **2 official datasets** located in `testing/tasks/`:
 
 1. **Generating New Code**: [`tasks/tasks_code_generation.json`](tasks/tasks_code_generation.json) (`mode: generate`)
-   - 45 algorithmic coding tasks written from natural-language specifications (25 `python`, 10 `cpp`, 10 `javascript`), split evenly across easy, medium, and complex.
+   - 48 algorithmic coding tasks written from natural-language specifications (28 `python`, 10 `cpp`, 10 `javascript`): 15 easy, 15 medium, 18 complex.
 2. **Fixing Bugs / Issues in Code**: [`tasks/task_bug_issues.json`](tasks/task_bug_issues.json) (`mode: fix_bugs` / `repair`)
-   - 33 multi-language bug-fixing tasks (`python`, `cpp`, `javascript`), split evenly across easy, medium, and complex.
+   - 35 multi-language bug-fixing tasks (`python`, `cpp`, `javascript`): 11 easy, 11 medium, 13 complex.
    - Each task embeds a small buggy program, sample inputs, expected outputs, and verified `exact_code` / `fixed_code`.
 
 ## How to Run Automated Testing
@@ -89,8 +89,8 @@ You can also specify a custom output directory using `--output-dir <path>`.
 
 | Dataset | Mode | File | Description | Tasks |
 | :--- | :--- | :--- | :--- | :---: |
-| **Generating new code** | `generate` | [`tasks/tasks_code_generation.json`](tasks/tasks_code_generation.json) | Write new standalone program from natural-language spec; 15 tasks per difficulty. | 45 |
-| **Fixing Bugs / Issues** | `fix_bugs` | [`tasks/task_bug_issues.json`](tasks/task_bug_issues.json) | Locate and repair bugs in existing programs; 11 tasks per difficulty. | 33 |
+| **Generating new code** | `generate` | [`tasks/tasks_code_generation.json`](tasks/tasks_code_generation.json) | Write new standalone program from natural-language spec; 15 easy, 15 medium, 18 complex. | 48 |
+| **Fixing Bugs / Issues** | `fix_bugs` | [`tasks/task_bug_issues.json`](tasks/task_bug_issues.json) | Locate and repair bugs in existing programs; 11 easy, 11 medium, 13 complex. | 35 |
 
 ### Bug Fixing Tasks Summary (`task_bug_issues.json`)
 
