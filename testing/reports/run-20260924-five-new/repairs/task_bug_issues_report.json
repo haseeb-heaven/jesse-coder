@@ -1,0 +1,76 @@
+{
+  "summary": {
+    "total": 2,
+    "passed": 0,
+    "passed_initial": 0,
+    "passed_on_retry": 0,
+    "retries_configured": 5,
+    "train_model_enabled": true,
+    "trained_count": 2,
+    "feedback_submitted_count": 2,
+    "feedback_recorded_count": 2,
+    "failed": 2,
+    "pass_rate_pct": 0.0,
+    "model": "jesse-prod",
+    "output_matching": "tolerant (value labels & line breaks ignored; values and their order must match)",
+    "timestamp": "2026-09-24 01:55:41"
+  },
+  "tasks": [
+    {
+      "id": "bug_34",
+      "title": "Signed Prime-Sum Grid Paths",
+      "language": "python",
+      "passed": false,
+      "passed_initial": false,
+      "passed_on_retry": false,
+      "retries_used": 5,
+      "equivalent_only": false,
+      "duration_ms": 0.0,
+      "expected_output": "1\n0\n",
+      "actual_output": "",
+      "error": "No valid code block extracted from model response.",
+      "model_response": "I don't have a solution I can verify for this one yet. None of my checked components reproduces what the task asks for, so I won't guess at Python code.",
+      "extracted_code": "",
+      "trained": true,
+      "feedback_submitted": true,
+      "feedback_recorded": true,
+      "training_source": "dataset_reference",
+      "training_skipped_reason": null,
+      "training_info": {
+        "ok": true,
+        "feedback_id": "fb_muejyq0i_kkdd",
+        "recorded": true,
+        "learning_active": true,
+        "tenant_isolated": true
+      }
+    },
+    {
+      "id": "bug_35",
+      "title": "Snapshot Isolation After Rotation",
+      "language": "python",
+      "passed": false,
+      "passed_initial": false,
+      "passed_on_retry": false,
+      "retries_used": 5,
+      "equivalent_only": false,
+      "duration_ms": 0.0,
+      "expected_output": "9\n13\n",
+      "actual_output": "",
+      "error": "No valid code block extracted from model response.",
+      "model_response": "I don't have a solution I can verify for this one yet. I can see the commands SNAP, ADD, LOAD, HASH, ROT, but none of my checked components reproduces what the task asks for, so I won't guess at Python code.",
+      "extracted_code": "",
+      "trained": true,
+      "feedback_submitted": true,
+      "feedback_recorded": true,
+      "training_source": "dataset_reference",
+      "training_skipped_reason": null,
+      "training_info": {
+        "ok": true,
+        "feedback_id": "fb_muejyryh_vvhy",
+        "recorded": true,
+        "learning_active": true,
+        "tenant_isolated": true
+      }
+    }
+  ]
+}
