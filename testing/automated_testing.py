@@ -687,6 +687,7 @@ def run_automated_testing(
     output_dir: Optional[Union[str, Path]] = None,
     models: Optional[List[str]] = None,
     task_id_filter: Optional[str] = None,
+    difficulty_filter: Optional[str] = None,
     language_filter: Optional[str] = None,
     force_language: Optional[str] = None,
     strict_output: bool = False,
@@ -715,6 +716,19 @@ def run_automated_testing(
         if not tasks:
             print(f"No tasks matched language filter '{language_filter}'.")
             return {"status": "error", "message": f"No tasks matched language filter '{language_filter}'."}
+
+    if difficulty_filter and difficulty_filter.strip().lower() != "all":
+        diff_target = difficulty_filter.strip().lower()
+        if diff_target in ("simple", "easy"):
+            valid_diffs = {"simple", "easy"}
+        elif diff_target in ("hard", "complex", "very complex", "very_complex"):
+            valid_diffs = {"hard", "complex", "very complex", "very_complex"}
+        else:
+            valid_diffs = {diff_target}
+        tasks = [t for t in tasks if str(t.get("difficulty", "")).lower() in valid_diffs]
+        if not tasks:
+            print(f"No tasks matched difficulty filter '{difficulty_filter}'.")
+            return {"status": "error", "message": f"No tasks matched difficulty filter '{difficulty_filter}'."}
 
     if task_id_filter:
         tasks = [t for t in tasks if t.get("id") == task_id_filter or task_id_filter in t.get("id", "")]
@@ -900,6 +914,15 @@ def build_argument_parser() -> argparse.ArgumentParser:
         help="Force all tasks to be implemented in a specific language (e.g. python)",
     )
     parser.add_argument(
+        "--difficulty",
+        "--complexity",
+        "-c",
+        type=str,
+        default=None,
+        choices=["all", "easy", "medium", "complex", "simple", "hard"],
+        help="Filter tasks by complexity level ('easy', 'medium', 'complex').",
+    )
+    parser.add_argument(
         "--strict-output",
         action="store_true",
         help=(
@@ -964,6 +987,7 @@ if __name__ == "__main__":
         output_dir=getattr(args, "output_dir", None),
         models=selected_models,
         task_id_filter=args.task,
+        difficulty_filter=getattr(args, "difficulty", None),
         language_filter=args.lang,
         force_language=args.force_lang,
         strict_output=args.strict_output,
