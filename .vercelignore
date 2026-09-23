@@ -1,0 +1,34 @@
+# Never upload environment secrets or local keys to Vercel
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+*.key
+*.pem
+*.secret
+*.secrets
+secrets/
+.secrets/
+
+# Ignore git and CI
+.git
+.github
+
+# Ignore test artifacts and caches
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore local scratch / node
+node_modules/
+dist/
+build/
+.tox/

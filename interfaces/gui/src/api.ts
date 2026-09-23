@@ -53,6 +53,7 @@ export function getAuthHeaders(): Record<string, string> {
   const key = getStoredApiKey();
   if (key) {
     headers['X-Jesse-Api-Key'] = key;
+    headers['Authorization'] = `Bearer ${key}`;
   }
   return headers;
 }

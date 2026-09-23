@@ -88,12 +88,54 @@ def is_vercel_env() -> bool:
     return bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
 
 
+# Serverless session and fileless in-memory + /tmp settings storage
+_SERVER_SETTINGS: Dict[str, Any] = {}
+_TMP_SETTINGS_PATH = Path("/tmp/jesse_coder_settings.json")
+
+
+def load_serverless_settings() -> Dict[str, Any]:
+    """Load settings from in-memory cache or /tmp in serverless environment."""
+    global _SERVER_SETTINGS
+    if _SERVER_SETTINGS:
+        return _SERVER_SETTINGS
+    if _TMP_SETTINGS_PATH.exists():
+        try:
+            data = json.loads(_TMP_SETTINGS_PATH.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                _SERVER_SETTINGS.update(data)
+                return _SERVER_SETTINGS
+        except Exception as exc:
+            logger.warning("Failed to read serverless settings from /tmp: %s", exc)
+    return _SERVER_SETTINGS
+
+
+def save_serverless_settings(settings: Dict[str, Any]) -> None:
+    """Save settings in memory and write to /tmp (fileless serverless environment)."""
+    global _SERVER_SETTINGS
+    _SERVER_SETTINGS.update(settings)
+    try:
+        _TMP_SETTINGS_PATH.write_text(json.dumps(_SERVER_SETTINGS, indent=2), encoding="utf-8")
+    except Exception as exc:
+        logger.warning("Failed to persist serverless settings to /tmp: %s", exc)
+
+
 def save_settings_to_env(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     model: Optional[str] = None,
 ) -> bool:
-    """Attempt to update or append settings in .env file if writable on disk."""
+    """Attempt to update or append settings in .env file if writable on disk, plus /tmp."""
+    # Always persist in memory and /tmp for serverless/fileless runtime
+    serverless_data: Dict[str, Any] = {}
+    if api_key is not None:
+        serverless_data["api_key"] = api_key
+    if base_url is not None:
+        serverless_data["base_url"] = base_url
+    if model is not None:
+        serverless_data["model"] = model
+    if serverless_data:
+        save_serverless_settings(serverless_data)
+
     try:
         env_path = _ROOT_DIR / ".env"
         lines = []
@@ -133,7 +175,7 @@ def save_settings_to_env(
 
 
 def get_bot(api_key_override: Optional[str] = None) -> JesseCodingBot:
-    """Lazy initialize and retrieve bot instance."""
+    """Lazy initialize and retrieve bot instance with serverless fallback."""
     global bot
     env_path = _ROOT_DIR / ".env"
     if env_path.exists():
@@ -149,18 +191,29 @@ def get_bot(api_key_override: Optional[str] = None) -> JesseCodingBot:
             cfg.api_key = "unconfigured"
         bot = JesseCodingBot(config=cfg)
 
-    # If an explicit override header is passed that is not unconfigured
-    if api_key_override and api_key_override.strip() and api_key_override.strip() != "unconfigured":
-        if bot.config.api_key != api_key_override.strip():
-            bot.config.api_key = api_key_override.strip()
-            bot.client = JesseClient(config=bot.config)
-    else:
-        # Check if environment / .env has a real key and restore if needed
+    # 1. Explicit override header passed
+    resolved_key = (
+        api_key_override.strip()
+        if (api_key_override and api_key_override.strip() != "unconfigured")
+        else None
+    )
+
+    # 2. Serverless in-memory / /tmp storage (fileless persistence)
+    if not resolved_key:
+        cached = load_serverless_settings()
+        if cached.get("api_key") and cached["api_key"] != "unconfigured":
+            resolved_key = cached["api_key"]
+
+    # 3. Check environment / .env
+    if not resolved_key:
         env_key = os.getenv("JESSE_API_KEY", "").strip()
-        if env_key and env_key != "unconfigured" and (not api_key_override):
-            if bot.config.api_key != env_key:
-                bot.config.api_key = env_key
-                bot.client = JesseClient(config=bot.config)
+        if env_key and env_key != "unconfigured":
+            resolved_key = env_key
+
+    if resolved_key:
+        if bot.config.api_key != resolved_key:
+            bot.config.api_key = resolved_key
+            bot.client = JesseClient(config=bot.config)
 
     # Ensure base_url defaults to https://jesse.my/api/v1
     env_base = os.getenv("JESSE_BASE_URL", "https://jesse.my/api/v1").strip()

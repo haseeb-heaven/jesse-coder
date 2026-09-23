@@ -254,10 +254,17 @@ class JesseCoderApp {
 
   private async checkBackendHealth(): Promise<void> {
     try {
+      const storedKey = api.getStoredApiKey();
       const health = await api.fetchHealth();
       this.ui.setStatus(`ONLINE: ${health.model}`, true);
       if (health.model) {
         this.ui.setSelectedModel(health.model);
+      }
+      // If serverless container cold-started without key, sync from browser localStorage
+      if (storedKey && (!health.has_api_key)) {
+        try {
+          await api.updateSettings({ api_key: storedKey });
+        } catch {}
       }
     } catch {
       this.ui.setStatus('DISCONNECTED', false);
@@ -638,6 +645,13 @@ ${diagnostic}
   private async openSettings(): Promise<void> {
     try {
       const settings = await api.getSettings();
+      const storedKey = api.getStoredApiKey();
+      if (storedKey && (!settings.has_api_key || !settings.api_key_masked)) {
+        settings.has_api_key = true;
+        settings.api_key_masked = storedKey.length > 8
+          ? `${storedKey.slice(0, 8)}${'•'.repeat(8)}${storedKey.slice(-4)}`
+          : '•'.repeat(storedKey.length);
+      }
       this.ui.populateSettings(settings, this.ui.getMaxRetries());
       this.ui.showSettingsModal();
     } catch (err: any) {
@@ -672,6 +686,10 @@ ${diagnostic}
     }
 
     try {
+      if (form.apiKey && form.apiKey.trim()) {
+        api.setStoredApiKey(form.apiKey.trim());
+      }
+
       const updateReq: SettingsUpdateRequest = {
         api_key: form.apiKey || undefined,
         base_url: form.baseUrl || undefined,

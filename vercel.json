@@ -3,7 +3,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 60,
-      "includeFiles": "source/**,interfaces/gui/server.py,interfaces/gui/static/**"
+      "includeFiles": "source/**,testing/**,interfaces/gui/server.py,interfaces/gui/static/**"
     }
   },
   "routes": [
