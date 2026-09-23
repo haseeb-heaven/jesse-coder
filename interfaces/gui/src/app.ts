@@ -6,7 +6,7 @@
 
 import { UIController } from './ui';
 import * as api from './api';
-import { ExecutionResult, StreamDoneEvent, SettingsUpdateRequest } from './types';
+import { ExecutionResult, StreamDoneEvent, SettingsUpdateRequest, TestingTask } from './types';
 
 class JesseCoderApp {
   private ui: UIController;
@@ -207,6 +207,48 @@ class JesseCoderApp {
 
     document.getElementById('btn-verify-key')?.addEventListener('click', async () => {
       await this.handleVerifyKey();
+    });
+
+    // ── Benchmarks & Automated Testing Suite ──────────────────────────────────
+    document.getElementById('btn-benchmarks')?.addEventListener('click', async () => {
+      await this.openBenchmarks();
+    });
+
+    document.querySelectorAll('.bench-tab').forEach((tab) => {
+      tab.addEventListener('click', async (e) => {
+        const target = (e.currentTarget as HTMLElement).getAttribute('data-bench-tab');
+        if (target) {
+          this.ui.setBenchmarksTab(target);
+          if (target === 'tasks') {
+            await this.loadBenchmarkTasks();
+          } else if (target === 'reports') {
+            await this.loadBenchmarkReports();
+          }
+        }
+      });
+    });
+
+    document.getElementById('bench-dataset-select')?.addEventListener('change', async () => {
+      await this.syncBenchmarkTaskDropdown();
+    });
+
+    document.getElementById('bench-explore-dataset')?.addEventListener('change', async () => {
+      await this.loadBenchmarkTasks();
+    });
+
+    document.getElementById('btn-run-benchmark')?.addEventListener('click', async () => {
+      await this.handleRunBenchmark();
+    });
+
+    document.getElementById('btn-refresh-reports')?.addEventListener('click', async () => {
+      await this.loadBenchmarkReports();
+    });
+
+    document.getElementById('bench-reports-select')?.addEventListener('change', async (e) => {
+      const filename = (e.target as HTMLSelectElement).value;
+      if (filename) {
+        await this.loadBenchmarkReportContent(filename);
+      }
     });
   }
 
@@ -663,6 +705,126 @@ ${diagnostic}
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<span>💾 Save Settings</span>';
       }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Benchmarks & Automated Testing Coordinators
+  // --------------------------------------------------------------------------
+
+  private async openBenchmarks(): Promise<void> {
+    this.ui.showBenchmarksModal();
+    this.ui.setBenchmarksTab('run');
+    await this.syncBenchmarkTaskDropdown();
+  }
+
+  private async syncBenchmarkTaskDropdown(): Promise<void> {
+    const sel = document.getElementById('bench-dataset-select') as HTMLSelectElement | null;
+    const dataset = sel?.value || 'task_bug_issues.json';
+    try {
+      const tasks = await api.fetchTestingTasks(dataset);
+      this.ui.populateBenchmarkTaskFilters(tasks);
+    } catch (err: any) {
+      console.warn('Failed to populate task filter dropdown:', err);
+    }
+  }
+
+  private async loadBenchmarkTasks(): Promise<void> {
+    const sel = document.getElementById('bench-explore-dataset') as HTMLSelectElement | null;
+    const dataset = sel?.value || 'task_bug_issues.json';
+    try {
+      const tasks = await api.fetchTestingTasks(dataset);
+      this.ui.renderExploreTasks(tasks, (task) => this.handleLoadTaskIntoChat(task));
+    } catch (err: any) {
+      this.ui.showToast(`Failed to load tasks: ${err.message}`, true);
+    }
+  }
+
+  private handleLoadTaskIntoChat(task: TestingTask): void {
+    let prompt = '';
+    if (task.buggy_code) {
+      prompt = `Fix the bug in the following ${task.language} code so that it produces the expected output.
+
+Buggy Code:
+\`\`\`${task.language}
+${task.buggy_code.trim()}
+\`\`\`
+
+${task.buggy_output ? `Buggy Output:\n${task.buggy_output.trim()}\n\n` : ''}Expected Output:
+${task.expected_output.trim()}`;
+    } else {
+      prompt = `${task.description}
+
+${task.input ? `Input:\n${task.input.trim()}\n\n` : ''}Expected Output:
+${task.expected_output.trim()}`;
+    }
+
+    this.ui.setPrompt(prompt);
+    if (task.language) {
+      this.ui.setLanguage(task.language);
+    }
+    this.ui.hideBenchmarksModal();
+    this.ui.showToast(`🚀 Loaded "${task.title}" (${task.language}) into Chat & Editor!`);
+  }
+
+  private async handleRunBenchmark(): Promise<void> {
+    const datasetSel = document.getElementById('bench-dataset-select') as HTMLSelectElement | null;
+    const modelSel = document.getElementById('bench-model-select') as HTMLSelectElement | null;
+    const taskFilter = document.getElementById('bench-task-filter') as HTMLSelectElement | null;
+    const retriesSel = document.getElementById('bench-retries-select') as HTMLSelectElement | null;
+    const repairToggle = document.getElementById('bench-repair-toggle') as HTMLInputElement | null;
+    const trainToggle = document.getElementById('bench-train-toggle') as HTMLInputElement | null;
+
+    const dataset = datasetSel?.value || 'task_bug_issues.json';
+    const model = modelSel?.value || 'jesse-prod';
+    const taskId = taskFilter?.value || undefined;
+    const retries = parseInt(retriesSel?.value || '5', 10) || 5;
+    const repair = repairToggle ? repairToggle.checked : true;
+    const trainModel = trainToggle ? trainToggle.checked : false;
+
+    this.ui.setBenchmarkRunning(true);
+    this.ui.showToast(`▶ Running benchmark on ${dataset}...`, false);
+
+    try {
+      const resp = await api.runTestingBenchmark({
+        dataset,
+        model,
+        task_id: taskId,
+        retries,
+        repair,
+        train_model: trainModel,
+      });
+
+      this.ui.renderBenchmarkResults(resp);
+      const passed = resp.primary_data.passed;
+      const total = resp.primary_data.total;
+      const pct = (resp.primary_data.pass_rate_pct || 0).toFixed(1);
+      this.ui.showToast(`✔ Benchmark finished: ${passed}/${total} Passed (${pct}%)`);
+    } catch (err: any) {
+      this.ui.showToast(`❌ Benchmark execution error: ${err.message}`, true);
+    } finally {
+      this.ui.setBenchmarkRunning(false);
+    }
+  }
+
+  private async loadBenchmarkReports(): Promise<void> {
+    try {
+      const reports = await api.fetchTestingReports();
+      this.ui.renderReportsList(reports);
+      if (reports.length > 0) {
+        await this.loadBenchmarkReportContent(reports[0].filename);
+      }
+    } catch (err: any) {
+      this.ui.showToast(`Failed to load reports: ${err.message}`, true);
+    }
+  }
+
+  private async loadBenchmarkReportContent(filename: string): Promise<void> {
+    try {
+      const detail = await api.fetchTestingReportContent(filename);
+      this.ui.renderReportContent(detail.content, detail.type);
+    } catch (err: any) {
+      this.ui.showToast(`Failed to load report content: ${err.message}`, true);
     }
   }
 }

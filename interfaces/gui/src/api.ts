@@ -17,6 +17,12 @@ import {
   VerifyConnectionResponse,
   StreamDoneEvent,
   StreamEvent,
+  TestingDataset,
+  TestingTask,
+  TestingRunParams,
+  TestingRunResponse,
+  TestingReportSummary,
+  TestingReportDetail,
 } from './types';
 
 const API_BASE = window.location.origin;
@@ -323,3 +329,68 @@ export async function streamChat(
     await onError(`Network/Stream error: ${err?.message || err}`);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Testing & Benchmarks API Client
+// ---------------------------------------------------------------------------
+
+export async function fetchTestingDatasets(): Promise<TestingDataset[]> {
+  const resp = await fetch(`${API_BASE}/api/testing/datasets`, {
+    headers: getAuthHeaders(),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to load datasets: ${resp.statusText}`);
+  }
+  const data = await resp.json();
+  return data.datasets || [];
+}
+
+export async function fetchTestingTasks(dataset: string = 'task_bug_issues.json', language?: string): Promise<TestingTask[]> {
+  let url = `${API_BASE}/api/testing/tasks?dataset=${encodeURIComponent(dataset)}`;
+  if (language) {
+    url += `&language=${encodeURIComponent(language)}`;
+  }
+  const resp = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to load tasks: ${resp.statusText}`);
+  }
+  const data = await resp.json();
+  return data.tasks || [];
+}
+
+export async function runTestingBenchmark(params: TestingRunParams): Promise<TestingRunResponse> {
+  const resp = await fetch(`${API_BASE}/api/testing/run`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Benchmark failed (${resp.status}): ${errText}`);
+  }
+  return await resp.json();
+}
+
+export async function fetchTestingReports(): Promise<TestingReportSummary[]> {
+  const resp = await fetch(`${API_BASE}/api/testing/reports`, {
+    headers: getAuthHeaders(),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to load reports: ${resp.statusText}`);
+  }
+  const data = await resp.json();
+  return data.reports || [];
+}
+
+export async function fetchTestingReportContent(filename: string): Promise<TestingReportDetail> {
+  const resp = await fetch(`${API_BASE}/api/testing/reports/${encodeURIComponent(filename)}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to load report ${filename}: ${resp.statusText}`);
+  }
+  return await resp.json();
+}
+

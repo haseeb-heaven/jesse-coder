@@ -692,7 +692,7 @@ def run_automated_testing(
     strict_output: bool = False,
     retries: int = 3,
     train_model: bool = False,
-) -> None:
+) -> Dict[str, Any]:
     resolved_path = resolve_tasks_path(tasks_file=tasks_file, dataset=dataset, mode=mode, repair=repair)
     if not resolved_path.exists():
         raise FileNotFoundError(f"Tasks file not found at {resolved_path}")
@@ -714,13 +714,13 @@ def run_automated_testing(
         tasks = [t for t in tasks if t.get("language", "").lower() == language_filter.lower()]
         if not tasks:
             print(f"No tasks matched language filter '{language_filter}'.")
-            return
+            return {"status": "error", "message": f"No tasks matched language filter '{language_filter}'."}
 
     if task_id_filter:
         tasks = [t for t in tasks if t.get("id") == task_id_filter or task_id_filter in t.get("id", "")]
         if not tasks:
             print(f"No tasks matched filter '{task_id_filter}'.")
-            return
+            return {"status": "error", "message": f"No tasks matched filter '{task_id_filter}'."}
 
     target_models = models or ["jesse-prod"]
     executor = CodeExecutor()
@@ -810,6 +810,20 @@ def run_automated_testing(
     print(f"\nStandard Reports:")
     print(f" - JSON:     {primary_json_path}")
     print(f" - Markdown: {primary_md_path}")
+
+    return {
+        "status": "ok",
+        "dataset": resolved_path.name,
+        "tasks_count": len(tasks),
+        "models": target_models,
+        "primary_model": target_models[0],
+        "primary_data": primary_data,
+        "all_models_data": all_models_data,
+        "primary_json_path": str(primary_json_path),
+        "primary_md_path": str(primary_md_path),
+        "comp_json_path": str(comp_json_path) if len(all_models_data) > 1 else None,
+        "comp_md_path": str(comp_md_path) if len(all_models_data) > 1 else None,
+    }
 
 
 def build_argument_parser() -> argparse.ArgumentParser:

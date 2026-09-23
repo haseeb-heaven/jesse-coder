@@ -2,7 +2,7 @@
  * UI controller and DOM manipulation for JesseCoder WebApp.
  */
 
-import { ChatMessage, ExecutionResult, ExtractedCode, ServerSettings } from './types';
+import { ChatMessage, ExecutionResult, ExtractedCode, ServerSettings, TestingTask, TestingRunResponse, TestingReportSummary } from './types';
 import { renderMarkdown, escapeHtml } from './markdown';
 
 export interface RawPayload {
@@ -73,6 +73,11 @@ export class UIController {
   private btnCloseSettingsEl: HTMLButtonElement;
   private btnSettingsEl: HTMLButtonElement;
 
+  // Benchmarks modal elements
+  private benchmarksModalEl: HTMLElement;
+  private btnBenchmarksEl: HTMLButtonElement;
+  private btnCloseBenchmarksEl: HTMLButtonElement;
+
   constructor() {
     this.dialogueEl         = document.getElementById('dialogue-stream') as HTMLElement;
     this.promptInputEl      = document.getElementById('prompt-input') as HTMLTextAreaElement;
@@ -128,6 +133,10 @@ export class UIController {
     this.btnCancelSettingsEl        = document.getElementById('btn-cancel-settings') as HTMLButtonElement;
     this.btnCloseSettingsEl         = document.getElementById('btn-close-settings') as HTMLButtonElement;
     this.btnSettingsEl              = document.getElementById('btn-settings') as HTMLButtonElement;
+
+    this.benchmarksModalEl          = document.getElementById('benchmarks-modal') as HTMLElement;
+    this.btnBenchmarksEl            = document.getElementById('btn-benchmarks') as HTMLButtonElement;
+    this.btnCloseBenchmarksEl       = document.getElementById('btn-close-benchmarks') as HTMLButtonElement;
 
     this.initEventListeners();
     this.initTheme();
@@ -187,6 +196,14 @@ export class UIController {
     });
     this.settingsModalEl?.addEventListener('click', (e) => {
       if (e.target === this.settingsModalEl) this.hideSettingsModal();
+    });
+
+    // Close benchmarks modal
+    this.btnCloseBenchmarksEl?.addEventListener('click', () => {
+      this.hideBenchmarksModal();
+    });
+    this.benchmarksModalEl?.addEventListener('click', (e) => {
+      if (e.target === this.benchmarksModalEl) this.hideBenchmarksModal();
     });
 
     // Toggle API key mask
@@ -945,6 +962,221 @@ export class UIController {
     }
     if (this.settingsRetriesEl) {
       this.settingsRetriesEl.value = val;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Benchmarks & Testing Modal
+  // --------------------------------------------------------------------------
+
+  public showBenchmarksModal(): void {
+    this.benchmarksModalEl?.classList.remove('hidden');
+  }
+
+  public hideBenchmarksModal(): void {
+    this.benchmarksModalEl?.classList.add('hidden');
+  }
+
+  public setBenchmarksTab(tabName: string): void {
+    document.querySelectorAll('.bench-tab').forEach((tab) => {
+      const isTarget = (tab as HTMLElement).getAttribute('data-bench-tab') === tabName;
+      if (isTarget) {
+        tab.className = 'bench-tab flex items-center gap-1.5 px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-amber-500 text-amber-600 dark:text-amber-400 transition';
+      } else {
+        tab.className = 'bench-tab flex items-center gap-1.5 px-4 py-2.5 text-xs font-mono font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition';
+      }
+    });
+
+    document.querySelectorAll('.bench-panel').forEach((panel) => {
+      (panel as HTMLElement).classList.add('hidden');
+    });
+    const targetPanel = document.getElementById(`bench-panel-${tabName}`);
+    if (targetPanel) {
+      targetPanel.classList.remove('hidden');
+      targetPanel.classList.add('flex-1', 'overflow-auto');
+    }
+  }
+
+  public populateBenchmarkTaskFilters(tasks: TestingTask[]): void {
+    const sel = document.getElementById('bench-task-filter') as HTMLSelectElement | null;
+    if (!sel) return;
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">All Tasks in Dataset</option>';
+    tasks.forEach((t) => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = `${t.id}: ${t.title} (${t.language})`;
+      sel.appendChild(opt);
+    });
+    if (currentVal && tasks.some((t) => t.id === currentVal)) {
+      sel.value = currentVal;
+    }
+  }
+
+  public setBenchmarkRunning(isRunning: boolean): void {
+    const btn = document.getElementById('btn-run-benchmark') as HTMLButtonElement | null;
+    const spinner = document.getElementById('bench-run-spinner') as HTMLElement | null;
+    const text = document.getElementById('bench-run-btn-text') as HTMLElement | null;
+    if (!btn || !spinner || !text) return;
+    btn.disabled = isRunning;
+    if (isRunning) {
+      spinner.classList.remove('hidden');
+      text.textContent = 'Running Benchmark...';
+      btn.classList.add('opacity-75', 'cursor-wait');
+    } else {
+      spinner.classList.add('hidden');
+      text.textContent = '▶ Start Automated Benchmark';
+      btn.classList.remove('opacity-75', 'cursor-wait');
+    }
+  }
+
+  public renderBenchmarkResults(resp: TestingRunResponse): void {
+    const container = document.getElementById('bench-results-container');
+    if (!container) return;
+    container.classList.remove('hidden');
+
+    const passRateEl = document.getElementById('bench-stat-passrate');
+    const passedEl = document.getElementById('bench-stat-passed');
+    const retriesEl = document.getElementById('bench-stat-retries');
+    const durationEl = document.getElementById('bench-stat-duration');
+    const listEl = document.getElementById('bench-tasks-results-list');
+
+    const data = resp.primary_data;
+    if (passRateEl) passRateEl.textContent = `${(data.pass_rate_pct || 0).toFixed(1)}%`;
+    if (passedEl) passedEl.textContent = `${data.passed} / ${data.total}`;
+    if (retriesEl) retriesEl.textContent = `${data.passed_initial ?? data.passed} / ${data.passed_on_retry ?? 0}`;
+    if (durationEl) durationEl.textContent = `${(data.total_duration_sec || 0).toFixed(1)}s`;
+
+    if (!listEl) return;
+    listEl.innerHTML = (data.results || []).map((r) => {
+      const isPass = r.status === 'PASS' || r.status === 'PASSED';
+      const badgeClass = isPass
+        ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
+        : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-800';
+      const attemptBadge = r.passed_on_attempt > 1
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 font-mono">Attempt ${r.passed_on_attempt}/${r.total_attempts}</span>`
+        : `<span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono">1 attempt</span>`;
+
+      return `
+        <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${r.status}</span>
+              <span class="font-bold text-slate-900 dark:text-slate-100">${escapeHtml(r.task_id)}: ${escapeHtml(r.title)}</span>
+              <span class="text-[10px] text-cyan-600 dark:text-cyan-400 uppercase font-mono">${escapeHtml(r.language)}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              ${attemptBadge}
+              <span class="text-[10px] text-slate-400 font-mono">${r.duration_sec.toFixed(2)}s</span>
+            </div>
+          </div>
+          ${r.actual_output !== undefined ? `
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-1 font-mono">
+              <span class="text-slate-400">Stdout:</span> <span class="whitespace-pre-wrap">${escapeHtml((r.actual_output || '').trim())}</span>
+            </div>
+          ` : ''}
+          ${!isPass && r.expected_output ? `
+            <div class="text-[11px] text-rose-500/80 dark:text-rose-400/80 font-mono">
+              <span class="text-slate-400">Expected:</span> <span class="whitespace-pre-wrap">${escapeHtml((r.expected_output || '').trim())}</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  public renderExploreTasks(tasks: TestingTask[], onLoadTask: (task: TestingTask) => void): void {
+    const listEl = document.getElementById('bench-explore-tasks-list');
+    const badgeEl = document.getElementById('bench-tasks-count-badge');
+    if (badgeEl) badgeEl.textContent = `${tasks.length} tasks`;
+    if (!listEl) return;
+
+    if (tasks.length === 0) {
+      listEl.innerHTML = '<span class="text-slate-400 italic">No tasks found.</span>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    tasks.forEach((t) => {
+      const card = document.createElement('div');
+      card.className = 'p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2';
+
+      const isBug = !!t.buggy_code;
+      const langColor = t.language === 'python' ? 'text-amber-500' : (t.language === 'cpp' ? 'text-blue-500' : 'text-yellow-500');
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isBug ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800' : 'bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800'}">
+              ${isBug ? 'Fix Bug' : 'Generate'}
+            </span>
+            <span class="font-bold text-slate-900 dark:text-slate-100">${escapeHtml(t.id)}: ${escapeHtml(t.title)}</span>
+            <span class="text-[10px] ${langColor} font-mono uppercase font-bold">${escapeHtml(t.language)}</span>
+          </div>
+          <button class="btn-load-task flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-[11px] font-bold shadow transition" title="Load into Editor & Chat">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            <span>Load in Chat</span>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">${escapeHtml(t.description || '')}</p>
+        ${t.buggy_code ? `
+          <div class="mt-2 text-[10px] rounded-lg bg-slate-100 dark:bg-slate-950 p-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-mono whitespace-pre overflow-x-auto max-h-36">
+            <div class="text-rose-500 font-bold mb-1">// Buggy Code:</div>${escapeHtml(t.buggy_code)}
+          </div>
+        ` : ''}
+        ${t.expected_output ? `
+          <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+            <span class="text-slate-400 font-bold">Expected Output:</span> ${escapeHtml(t.expected_output.trim())}
+          </div>
+        ` : ''}
+      `;
+
+      const btnLoad = card.querySelector('.btn-load-task') as HTMLButtonElement;
+      btnLoad?.addEventListener('click', () => onLoadTask(t));
+
+      listEl.appendChild(card);
+    });
+  }
+
+  public renderReportsList(reports: TestingReportSummary[]): void {
+    const sel = document.getElementById('bench-reports-select') as HTMLSelectElement | null;
+    if (!sel) return;
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">Select a report...</option>';
+    reports.forEach((r) => {
+      const opt = document.createElement('option');
+      opt.value = r.filename;
+      opt.textContent = `${r.filename} (${(r.size_bytes / 1024).toFixed(1)} KB — ${r.modified})`;
+      sel.appendChild(opt);
+    });
+    if (currentVal && reports.some((r) => r.filename === currentVal)) {
+      sel.value = currentVal;
+    } else if (reports.length > 0) {
+      sel.value = reports[0].filename;
+    }
+  }
+
+  public renderReportContent(content: string, type: 'markdown' | 'json'): void {
+    const el = document.getElementById('bench-report-content');
+    if (!el) return;
+    if (type === 'markdown') {
+      el.innerHTML = renderMarkdown(content);
+    } else {
+      el.textContent = content;
+    }
+  }
+
+  public setPrompt(text: string): void {
+    this.promptInputEl.value = text;
+    this.promptInputEl.style.height = 'auto';
+    this.promptInputEl.style.height = `${Math.min(this.promptInputEl.scrollHeight, 250)}px`;
+    this.promptInputEl.focus();
+  }
+
+  public setLanguage(lang: string): void {
+    const langSelect = document.getElementById('lang-select') as HTMLSelectElement | null;
+    if (langSelect) {
+      langSelect.value = lang.toLowerCase();
     }
   }
 }

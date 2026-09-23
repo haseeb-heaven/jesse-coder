@@ -6,12 +6,14 @@ and static file serving for the TypeScript WebApp.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 import sys
+import time
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -501,6 +503,18 @@ class DocumentQueryRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20, description="Number of results to return")
 
 
+class TestingRunRequest(BaseModel):
+    dataset: Optional[str] = Field(default="task_bug_issues.json", description="Target dataset name or path")
+    task_id: Optional[str] = Field(default=None, description="Optional single task ID filter (e.g. bug_01)")
+    model: Optional[str] = Field(default="jesse-prod", description="Jesse model name or 'all'")
+    retries: int = Field(default=5, ge=0, le=10, description="Max repair retries (minimum 3 if enabled)")
+    repair: bool = Field(default=True, description="Enable self-healing auto-repair mode")
+    train_model: bool = Field(default=False, description="Submit failed code corrections via /feedback")
+    strict_output: bool = Field(default=False, description="Strict exact-match output validation")
+    language: Optional[str] = Field(default=None, description="Filter tasks by language")
+
+
+
 # ---------------------------------------------------------------------------
 # Feedback endpoint — jesse-prod learns from right/wrong ratings
 # ---------------------------------------------------------------------------
@@ -609,6 +623,138 @@ async def query_documents(req: DocumentQueryRequest, request: Request) -> Dict[s
     except Exception as exc:
         logger.warning("Document query error: %s", exc)
         return {"status": "degraded", "data": {}, "detail": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# Automated Testing & Benchmark Suite Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/testing/datasets")
+async def list_testing_datasets() -> Dict[str, Any]:
+    """List available benchmark datasets with task counts and metadata."""
+    datasets = [
+        {
+            "id": "task_bug_issues.json",
+            "name": "Fixing Bugs / Issues",
+            "description": "10 multi-language bug-fixing tasks (Python, C++, JavaScript) with verified buggy code and fixes.",
+            "filename": "task_bug_issues.json",
+            "task_count": 10,
+            "mode": "fix_bugs",
+        },
+        {
+            "id": "tasks_code_generation.json",
+            "name": "Generating New Code",
+            "description": "20 algorithmic and system programming tasks across Python, C++, Go, Rust, and JavaScript.",
+            "filename": "tasks_code_generation.json",
+            "task_count": 20,
+            "mode": "generate",
+        },
+    ]
+    return {"status": "ok", "datasets": datasets}
+
+
+@app.get("/api/testing/tasks")
+async def get_testing_tasks(
+    dataset: str = "task_bug_issues.json",
+    language: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Retrieve all tasks from a benchmark dataset in testing/tasks/."""
+    from testing.automated_testing import resolve_tasks_path
+    try:
+        tasks_path = resolve_tasks_path(tasks_file=dataset, dataset=dataset)
+        if not tasks_path.exists():
+            raise HTTPException(status_code=404, detail=f"Dataset {dataset} not found.")
+        with open(tasks_path, "r", encoding="utf-8") as f:
+            tasks = json.load(f)
+        if language:
+            tasks = [t for t in tasks if t.get("language", "").lower() == language.lower()]
+        return {"status": "ok", "dataset": tasks_path.name, "count": len(tasks), "tasks": tasks}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Failed to load testing tasks: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/testing/run")
+async def run_testing_benchmark(req: TestingRunRequest, request: Request) -> Dict[str, Any]:
+    """
+    Run an automated benchmark test suite or single task.
+    Executes in a worker thread so the server remains responsive.
+    """
+    from testing.automated_testing import run_automated_testing
+    header_key = extract_request_api_key(request)
+    if header_key:
+        os.environ["JESSE_API_KEY"] = header_key
+
+    # Select target models
+    if req.model and req.model.lower() == "all":
+        target_models = ["jesse-prod", "jesse-pristine", "jesse"]
+    elif req.model:
+        target_models = [req.model]
+    else:
+        target_models = ["jesse-prod"]
+
+    try:
+        res = await asyncio.to_thread(
+            run_automated_testing,
+            tasks_file=req.dataset,
+            dataset=req.dataset,
+            repair=req.repair,
+            models=target_models,
+            task_id_filter=req.task_id,
+            language_filter=req.language,
+            strict_output=req.strict_output,
+            retries=req.retries,
+            train_model=req.train_model,
+        )
+        return res
+    except Exception as exc:
+        logger.exception("Testing benchmark failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Benchmark execution failed: {exc}")
+
+
+@app.get("/api/testing/reports")
+async def list_testing_reports() -> Dict[str, Any]:
+    """List all generated test and comparison reports from testing/reports/."""
+    reports_dir = _ROOT_DIR / "testing" / "reports"
+    if not reports_dir.exists():
+        return {"status": "ok", "reports": []}
+
+    reports = []
+    for p in sorted(reports_dir.glob("*"), key=lambda x: x.stat().st_mtime, reverse=True):
+        if p.name == ".gitkeep":
+            continue
+        if p.suffix in (".md", ".json"):
+            stat = p.stat()
+            reports.append({
+                "filename": p.name,
+                "type": "markdown" if p.suffix == ".md" else "json",
+                "size_bytes": stat.st_size,
+                "modified": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stat.st_mtime)),
+            })
+    return {"status": "ok", "reports": reports}
+
+
+@app.get("/api/testing/reports/{filename}")
+async def get_testing_report_content(filename: str) -> Dict[str, Any]:
+    """Fetch the text content of a generated test report."""
+    safe_filename = Path(filename).name
+    report_path = _ROOT_DIR / "testing" / "reports" / safe_filename
+    if not report_path.exists() or not report_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Report file {safe_filename} not found.")
+
+    try:
+        content = report_path.read_text(encoding="utf-8")
+        is_md = report_path.suffix == ".md"
+        return {
+            "status": "ok",
+            "filename": safe_filename,
+            "type": "markdown" if is_md else "json",
+            "content": content,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to read report: {exc}")
 
 
 # ---------------------------------------------------------------------------

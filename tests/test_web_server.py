@@ -127,3 +127,49 @@ def test_settings_verify_endpoint(client):
     assert data["valid"] is False
     assert "error" in data
 
+
+def test_testing_datasets_endpoint(client):
+    """Test /api/testing/datasets returns both datasets."""
+    res = client.get("/api/testing/datasets")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+    datasets = data["datasets"]
+    assert len(datasets) == 2
+    filenames = [d["filename"] for d in datasets]
+    assert "task_bug_issues.json" in filenames
+    assert "tasks_code_generation.json" in filenames
+
+
+def test_testing_tasks_endpoint(client):
+    """Test /api/testing/tasks returns tasks from task_bug_issues.json."""
+    res = client.get("/api/testing/tasks?dataset=task_bug_issues.json")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+    assert data["count"] == 10
+    assert len(data["tasks"]) == 10
+    task_0 = data["tasks"][0]
+    assert "id" in task_0
+    assert "buggy_code" in task_0
+    assert "expected_output" in task_0
+
+
+def test_testing_reports_endpoints(client):
+    """Test /api/testing/reports lists reports from testing/reports/."""
+    res = client.get("/api/testing/reports")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+    assert isinstance(data["reports"], list)
+
+
+def test_benchmarks_button_and_modal_in_index(client):
+    """Test index HTML includes benchmarks button and modal."""
+    res = client.get("/")
+    assert res.status_code == 200
+    assert "btn-benchmarks" in res.text
+    assert "benchmarks-modal" in res.text
+    assert "bench-dataset-select" in res.text
+
+

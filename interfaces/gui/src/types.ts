@@ -170,3 +170,98 @@ export interface VerifyConnectionResponse {
   error?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Benchmarks & Automated Testing
+// ---------------------------------------------------------------------------
+
+export interface TestingDataset {
+  id: string;
+  name: string;
+  description: string;
+  filename: string;
+  task_count: number;
+  mode: string;
+}
+
+export interface TestingTask {
+  id: string;
+  title: string;
+  description: string;
+  language: string;
+  mode?: string;
+  buggy_code?: string;
+  buggy_output?: string;
+  expected_output: string;
+  input?: string;
+  exact_code?: string;
+  fixed_code?: string;
+}
+
+export interface TestingRunParams {
+  dataset?: string;
+  task_id?: string;
+  model?: string;
+  retries?: number;
+  repair?: boolean;
+  train_model?: boolean;
+  strict_output?: boolean;
+  language?: string;
+}
+
+export interface TestingTaskResult {
+  task_id: string;
+  title: string;
+  language: string;
+  mode?: string;
+  status: 'PASS' | 'FAIL' | 'PASSED' | 'FAILED';
+  passed_on_attempt: number;
+  total_attempts: number;
+  duration_sec: number;
+  actual_output?: string;
+  expected_output?: string;
+  extracted_code?: string;
+  error?: string;
+  initial_passed?: boolean;
+}
+
+export interface TestingModelEvaluation {
+  model: string;
+  total: number;
+  passed: number;
+  failed: number;
+  passed_initial: number;
+  passed_on_retry: number;
+  pass_rate_pct: number;
+  total_duration_sec: number;
+  results: TestingTaskResult[];
+}
+
+export interface TestingRunResponse {
+  status: string;
+  dataset: string;
+  tasks_count: number;
+  models: string[];
+  primary_model: string;
+  primary_data: TestingModelEvaluation;
+  all_models_data?: TestingModelEvaluation[];
+  primary_json_path: string;
+  primary_md_path: string;
+  comp_json_path?: string | null;
+  comp_md_path?: string | null;
+}
+
+export interface TestingReportSummary {
+  filename: string;
+  type: 'markdown' | 'json';
+  size_bytes: number;
+  modified: string;
+}
+
+export interface TestingReportDetail {
+  status: string;
+  filename: string;
+  type: 'markdown' | 'json';
+  content: string;
+}
+
+
