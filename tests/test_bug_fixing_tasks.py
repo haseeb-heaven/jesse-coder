@@ -41,7 +41,7 @@ def test_bug_task_set_metadata():
     for task in TASKS:
         assert task["mode"] == TASK_MODE_FIX_BUGS
         assert task["language"] in ("python", "cpp", "javascript")
-        assert task["difficulty"] in ("simple", "medium")
+        assert task["difficulty"] in ("simple", "easy", "medium", "complex", "very complex", "hard")
         assert task["expected_output"].strip(), f"{task['id']}: missing expected output"
         assert f"```{task['language']}" in task["task"], f"{task['id']}: buggy program not embedded"
 
