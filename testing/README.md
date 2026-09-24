@@ -118,6 +118,6 @@ python3 testing/automated_testing.py --strict-output
 
 ## API Request Pacing
 
-The Jesse API allows **5 requests per second per API key**, so requests must be spaced at least **200 ms apart**. There is no daily cap. `JesseClient` applies this pacing across chat, streaming, feedback, and other REST requests, including SDK wire retries, and shares the pacing state across client instances for the same key within one process. This local pacing does not replace the service's account-wide rate enforcement across separate processes.
+The Jesse API allows **5 requests per second per API key**, so requests must be spaced at least **200 ms apart**. There is no daily cap. Benchmark initial attempts, each auto-repair retry, and feedback submissions all use `JesseClient`, which applies this pacing to chat, streaming, feedback, and other REST requests. Its HTTP transport hook spaces every wire attempt, including SDK retries, and shares pacing across client instances and concurrent benchmark runs that use the same key within one process. Separate Python processes do not share the local pacer; the service still enforces the account-wide limit across processes.
 
-The client pacing behavior is covered by `tests/test_client.py`; those tests use a fake clock and mock HTTP transport and do not make live API calls.
+Pacing is covered by `tests/test_client.py` and `test_benchmark_attempts_retries_and_feedback_are_paced_per_key` in `tests/test_automated_testing_retries.py`. These tests use a fake clock and mock HTTP transport, verify a minimum **200 ms between requests** for the same key, and do not make live API calls.

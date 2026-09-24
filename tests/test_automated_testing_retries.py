@@ -3,8 +3,14 @@ Unit tests for automated testing retry mechanism in testing/automated_testing.py
 """
 
 from unittest.mock import MagicMock, patch
+import uuid
+
+import httpx
 import pytest
 
+from source.bot import JesseCodingBot
+from source.client import JesseClient
+from source.config import JesseConfig
 from source.executor import CodeExecutor, ExecutionResult
 from testing.automated_testing import (
     build_task_retry_prompt,
@@ -80,6 +86,77 @@ def test_evaluate_model_on_tasks_recovers_on_retry():
     assert task_res["passed_on_retry"] is True
     assert task_res["retries_used"] == 1
     assert mock_bot.ask.call_count == 2
+
+
+def test_benchmark_attempts_retries_and_feedback_are_paced_per_key(monkeypatch):
+    now = [0.0]
+    request_starts = []
+
+    def fake_sleep(delay):
+        now[0] += delay
+
+    def handler(request):
+        request_starts.append(now[0])
+        if request.url.path.endswith("/feedback"):
+            return httpx.Response(200, json={"recorded": True}, request=request)
+        return httpx.Response(
+            200,
+            json={
+                "id": "chatcmpl-benchmark-pacing",
+                "object": "chat.completion",
+                "created": 1,
+                "model": "jesse-prod",
+                "choices": [{
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "```python\nprint(0)\n```"},
+                    "finish_reason": "stop",
+                }],
+            },
+            request=request,
+        )
+
+    api_key = f"benchmark-pacing-{uuid.uuid4().hex}"
+    config = JesseConfig(
+        api_key=api_key,
+        base_url="https://jesse.test/api/v1",
+        max_retries=0,
+    )
+    client = JesseClient(config=config)
+    transport = httpx.MockTransport(handler)
+    client._client._client._transport = transport
+    client._http._transport = transport
+    monkeypatch.setattr(client._request_pacer, "_monotonic", lambda: now[0])
+    monkeypatch.setattr(client._request_pacer, "_sleep", fake_sleep)
+    bot = JesseCodingBot(config=config, client=client)
+    task = {
+        "id": "pacing_benchmark_task",
+        "title": "Return one",
+        "language": "python",
+        "task": "Print 1.",
+        "input": "",
+        "expected_output": "1\n",
+        "exact_code": "print(1)",
+    }
+
+    try:
+        with patch("testing.automated_testing.JesseCodingBot", return_value=bot):
+            report = evaluate_model_on_tasks(
+                tasks=[task],
+                model_name="jesse-prod",
+                executor=CodeExecutor(),
+                retries=5,
+                train_model=True,
+            )
+    finally:
+        client.close()
+
+    assert report["tasks"][0]["retries_used"] == 5
+    assert report["tasks"][0]["feedback_recorded"] is True
+    assert len(request_starts) == 7  # initial attempt + 5 retries + feedback
+    assert all(
+        later - earlier >= 0.2 - 1e-9
+        for earlier, later in zip(request_starts, request_starts[1:])
+    )
 
 
 def test_training_uses_sample_verified_retry_code_after_initial_failure():
